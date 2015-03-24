@@ -5,6 +5,7 @@ namespace RandM.RMLib
 {
     public class ProxyServerThread : RMThread
     {
+        public event EventHandler<ConnectionAcceptedEventArgs> ConnectionAcceptedEvent = null;
         public event EventHandler<StringEventArgs> ErrorMessageEvent = null;
         public event EventHandler<StringEventArgs> MessageEvent = null;
 
@@ -53,6 +54,7 @@ namespace RandM.RMLib
                         TcpConnection NewConnection = _Server.AcceptTCP();
                         if (NewConnection != null)
                         {
+                            ConnectionAcceptedEventArgs.Raise(this, ConnectionAcceptedEvent, _InIP, _InPort, NewConnection.GetRemoteIP(), NewConnection.GetRemotePort());
                             RaiseMessageEvent("Connection accepted from " + NewConnection.GetRemoteIP() + ":" + NewConnection.GetRemotePort());
 
                             ProxyClientThread NewClient = new ProxyClientThread(NewConnection, _OutConnectionType);
