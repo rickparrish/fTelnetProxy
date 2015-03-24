@@ -6,33 +6,22 @@ using System.Text;
 
 namespace RandM.RMLib
 {
-    public class ProxyClientThread : RMThread
+    public class WebSocketClientThread : RMThread
     {
         public event EventHandler CloseEvent = null;
         public event EventHandler<StringEventArgs> ErrorMessageEvent = null;
         public event EventHandler<StringEventArgs> MessageEvent = null;
 
-        private TcpConnection _InConnection = null;
+        private WebSocketConnection _InConnection = null;
         private TcpConnection _OutConnection = null;
-        private ConnectionType _OutConnectionType;
 
-        public ProxyClientThread(TcpConnection connection, ConnectionType outConnectionType)
+        public WebSocketClientThread(WebSocketConnection connection)
         {
             _InConnection = connection;
-            _OutConnectionType = outConnectionType;
         }
 
         protected override void Execute()
         {
-            switch (_OutConnectionType)
-            {
-                case ConnectionType.None: _OutConnection = new TcpConnection(); break;
-                case ConnectionType.RLogin: _OutConnection = new RLoginConnection(); break;
-                case ConnectionType.Telnet: _OutConnection = new TelnetConnection(); break;
-                case ConnectionType.WebSocket: _OutConnection = new WebSocketConnection(); break;
-                default: RaiseErrorMessageEvent("ProxyClient unknown OutConnectionType: " + _OutConnectionType.ToString()); return;
-            }
-
             // Read the Host:Port line from fTelnet (should be bbs.ftelnet.ca:23\r\n for example)
             string HostAndPort = _InConnection.ReadLn(5000);
             if (_InConnection.ReadTimedOut)
@@ -65,6 +54,7 @@ namespace RandM.RMLib
             }
 
             // Try to connect to the desired Host and Port
+            _OutConnection = new TcpConnection();
             if (_OutConnection.Connect(Host, Port))
             {
                 RaiseMessageEvent("Connected to " + HostAndPort);

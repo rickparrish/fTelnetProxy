@@ -11,8 +11,8 @@ namespace RandM.fTelnetProxy
         private string _ErrorLogFile = StringUtils.PathCombine(ProcessUtils.StartupPath, "Error.log");
         private string _LogFile = StringUtils.PathCombine(ProcessUtils.StartupPath, "fTelnetProxy.log");
         
-        FlashSocketPolicyServerThread _FSPS = null;
-        ProxyServerThread _WebSocketProxy = null;
+        FlashSocketPolicyServerThread _FlashSocketPolicyServer = null;
+        WebSocketServerThread _WebSocketServer = null;
 
         public fTelnetProxy()
         {
@@ -21,31 +21,31 @@ namespace RandM.fTelnetProxy
             MessageEvent(null, new StringEventArgs("Starting Flash Socket Policy Thread"));
             try
             {
-                _FSPS = new FlashSocketPolicyServerThread("0.0.0.0", 843, "1123"); // TODO 0.0.0.0, 843, 1123
-                _FSPS.ConnectionAcceptedEvent += FSPS_ConnectionAcceptedEvent;
-                _FSPS.ErrorMessageEvent += ErrorMessageEvent;
-                _FSPS.MessageEvent += MessageEvent;
-                _FSPS.Start();
+                _FlashSocketPolicyServer = new FlashSocketPolicyServerThread("0.0.0.0", 843, "1123"); // TODO 0.0.0.0, 843, 1123
+                _FlashSocketPolicyServer.ConnectionAcceptedEvent += FlashSocketPolicyServer_ConnectionAcceptedEvent;
+                _FlashSocketPolicyServer.ErrorMessageEvent += ErrorMessageEvent;
+                _FlashSocketPolicyServer.MessageEvent += MessageEvent;
+                _FlashSocketPolicyServer.Start();
             }
             catch (Exception ex)
             {
                 ErrorMessageEvent(null, new StringEventArgs("Failed to start Flash Socket Policy Server Thread: " + ex.Message));
-                _FSPS = null;
+                _FlashSocketPolicyServer = null;
             }
 
             MessageEvent(null, new StringEventArgs("Starting WebSocket Proxy Thread"));
             try
             {
-                _WebSocketProxy = new ProxyServerThread("0.0.0.0", 1123, ConnectionType.WebSocket, ConnectionType.None); // TODO 0.0.0.0, 1123
-                _WebSocketProxy.ConnectionAcceptedEvent += WebSocketProxy_ConnectionAcceptedEvent;
-                _WebSocketProxy.ErrorMessageEvent += ErrorMessageEvent;
-                _WebSocketProxy.MessageEvent += MessageEvent;
-                _WebSocketProxy.Start();
+                _WebSocketServer = new WebSocketServerThread("0.0.0.0", 1123); // TODO 0.0.0.0, 1123
+                _WebSocketServer.ConnectionAcceptedEvent += WebSocketProxy_ConnectionAcceptedEvent;
+                _WebSocketServer.ErrorMessageEvent += ErrorMessageEvent;
+                _WebSocketServer.MessageEvent += MessageEvent;
+                _WebSocketServer.Start();
             }
             catch (Exception ex)
             {
                 ErrorMessageEvent(null, new StringEventArgs("Failed to start WebSocket Proxy Thread: " + ex.Message));
-                _WebSocketProxy = null;
+                _WebSocketServer = null;
             }
         }
 
@@ -53,15 +53,15 @@ namespace RandM.fTelnetProxy
         {
             MessageEvent(null, new StringEventArgs("fTelnetProxy Shutting Down"));
 
-            if (_WebSocketProxy != null)
+            if (_WebSocketServer != null)
             {
                 MessageEvent(null, new StringEventArgs("Stopping WebSocket Proxy Thread"));
-                _WebSocketProxy.Stop();
+                _WebSocketServer.Stop();
             }
-            if (_FSPS != null)
+            if (_FlashSocketPolicyServer != null)
             {
                 MessageEvent(null, new StringEventArgs("Stopping Flash Socket Policy Thread"));
-                _FSPS.Stop();
+                _FlashSocketPolicyServer.Stop();
             }
 
             MessageEvent(null, new StringEventArgs("fTelnetProxy Terminated" + Environment.NewLine + Environment.NewLine));
@@ -74,9 +74,9 @@ namespace RandM.fTelnetProxy
             if (Environment.UserInteractive) Console.Write(LogLine);
         }
 
-        void FSPS_ConnectionAcceptedEvent(object sender, ConnectionAcceptedEventArgs e)
+        void FlashSocketPolicyServer_ConnectionAcceptedEvent(object sender, ConnectionAcceptedEventArgs e)
         {
-            string LogLine = "[" + DateTime.Now.ToString() + "] Accepted FSPS connection from " + e.RemoteIP + ":" + e.RemotePort.ToString();
+            string LogLine = "[" + DateTime.Now.ToString() + "] Accepted Flash Socket Policy Server connection from " + e.RemoteIP + ":" + e.RemotePort.ToString();
             FileUtils.FileAppendAllText(_ConnectionLogFile, LogLine);
             if (Environment.UserInteractive) Console.Write(LogLine);
         }
