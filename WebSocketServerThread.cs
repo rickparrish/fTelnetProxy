@@ -10,30 +10,20 @@ namespace RandM.RMLib
         public event EventHandler<StringEventArgs> ErrorMessageEvent = null;
         public event EventHandler<StringEventArgs> MessageEvent = null;
 
-        private object _Lock = new object();
-
-        private List<WebSocketClientThread> _Connections = new List<WebSocketClientThread>();
-        private TcpConnection _Server = null;
-
         private string _Address;
         private int _Port;
+        private TcpConnection _Server = null;
 
         public WebSocketServerThread(string address, int port)
         {
             _Address = address;
             _Port = port;
-
-            _Server = new WebSocketConnection();
-            _Stop = !_Server.Listen(_Address, _Port);
-            if (_Stop)
-            {
-                throw new ApplicationException("Unable to listen on " + _Address + ":" + _Port.ToString());
-            }
         }
 
         protected override void Execute()
         {
-            if (!_Stop)
+            _Server = new WebSocketConnection();
+            if (_Server.Listen(_Address, _Port))
             {
                 while (!_Stop)
                 {
@@ -50,13 +40,8 @@ namespace RandM.RMLib
                                 RaiseMessageEvent("Connection accepted from " + NewConnection.GetRemoteIP() + ":" + NewConnection.GetRemotePort());
 
                                 WebSocketClientThread NewClient = new WebSocketClientThread(NewConnection);
-                                NewClient.CloseEvent += new System.EventHandler(NewClient_CloseEvent);
                                 NewClient.ErrorMessageEvent += new EventHandler<StringEventArgs>(ProxyClient_ErrorMessageEvent);
                                 NewClient.MessageEvent += new EventHandler<StringEventArgs>(ProxyClient_MessageEvent);
-                                lock (_Lock)
-                                {
-                                    _Connections.Add(NewClient);
-                                }
                                 NewClient.Start();
                             }
                             else
@@ -66,19 +51,10 @@ namespace RandM.RMLib
                         }
                     }
                 }
-
-                while (_Connections.Count > 0)
-                {
-                    _Connections[0].Stop();
-                }
             }
-        }
-
-        void NewClient_CloseEvent(object sender, System.EventArgs e)
-        {
-            lock (_Lock)
+            else
             {
-                _Connections.Remove((WebSocketClientThread)sender);
+                RaiseErrorMessageEvent("WebSocket Server Thread: Unable to listen on " + _Address + ":" + _Port);
             }
         }
 
