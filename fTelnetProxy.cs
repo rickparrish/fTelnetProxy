@@ -5,7 +5,7 @@ using System.Reflection;
 
 namespace RandM.fTelnetProxy
 {
-    public class fTelnetProxy
+    public class fTelnetProxy : IDisposable
     {
         private string _ErrorLogFile = StringUtils.PathCombine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "fTelnetProxy_Error.log");
         private string _LogFile = StringUtils.PathCombine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "fTelnetProxy.log");
@@ -14,7 +14,7 @@ namespace RandM.fTelnetProxy
         ProxyServerThread _TelnetProxy = null;
         ProxyServerThread _WebSocketProxy = null;
 
-        public void Start()
+        public fTelnetProxy()
         {
             MessageEvent(null, new StringEventArgs("fTelnetProxy Starting Up"));
             MessageEvent(null, new StringEventArgs("Starting Flash Socket Policy Thread"));
@@ -60,7 +60,7 @@ namespace RandM.fTelnetProxy
             }
         }
 
-        public void Stop()
+        public void Dispose()
         {
             MessageEvent(null, new StringEventArgs("fTelnetProxy Shutting Down"));
 
@@ -85,12 +85,16 @@ namespace RandM.fTelnetProxy
 
         private void ErrorMessageEvent(object sender, StringEventArgs mea)
         {
-            FileUtils.FileAppendAllText(_ErrorLogFile, "[" + DateTime.Now.ToString() + "] " + mea.Text + Environment.NewLine);
+            string LogLine = "[" + DateTime.Now.ToString() + "] " + mea.Text + Environment.NewLine;
+            FileUtils.FileAppendAllText(_ErrorLogFile, LogLine);
+            if (Environment.UserInteractive) Console.Write(LogLine);
         }
 
         private void MessageEvent(object sender, StringEventArgs mea)
         {
-            FileUtils.FileAppendAllText(_LogFile, "[" + DateTime.Now.ToString() + "] " + mea.Text + Environment.NewLine);
+            string LogLine = "[" + DateTime.Now.ToString() + "] " + mea.Text + Environment.NewLine;
+            FileUtils.FileAppendAllText(_LogFile, LogLine);
+            if (Environment.UserInteractive) Console.Write(LogLine);
         }
     }
 }

@@ -15,17 +15,16 @@ namespace RandM.fTelnetProxy
         public Service()
         {
             InitializeComponent();
-            _fTelnetProxy = new fTelnetProxy();
         }
 
         protected override void OnStart(string[] args)
         {
-            _fTelnetProxy.Start();
+            _fTelnetProxy = new fTelnetProxy();
         }
 
         protected override void OnStop()
         {
-            _fTelnetProxy.Stop();
+            _fTelnetProxy.Dispose();
         }
     }
 }
