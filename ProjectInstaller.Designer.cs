@@ -41,6 +41,7 @@
             // 
             this.serviceInstaller1.DisplayName = "fTelnetProxy";
             this.serviceInstaller1.ServiceName = "fTelnetProxy";
+            this.serviceInstaller1.StartType = System.ServiceProcess.ServiceStartMode.Automatic;
             // 
             // ProjectInstaller
             // 
