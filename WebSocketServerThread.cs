@@ -1,12 +1,13 @@
 ﻿using System.Collections.Generic;
 using System;
 using System.Net.Sockets;
+using System.IO;
+using System.Text;
 
 namespace RandM.RMLib
 {
     public class WebSocketServerThread : RMThread
     {
-        // TODO Handle outputting to fTelnetProxy-Connections.log
         public event EventHandler<StringEventArgs> ErrorMessageEvent = null;
         public event EventHandler<StringEventArgs> MessageEvent = null;
 
@@ -25,28 +26,36 @@ namespace RandM.RMLib
             _Server = new WebSocketConnection();
             if (_Server.Listen(_Address, _Port))
             {
-                while (!_Stop)
+                using (FileStream LogStream = new FileStream(Path.Combine(ProcessUtils.StartupPath, "fTelnetProxy-Connections.log"), FileMode.Append, FileAccess.Write, FileShare.Read))
                 {
-                    // Accept an incoming connection
-                    if (_Server.CanAccept(500)) // 1/2 of a second
+                    while (!_Stop)
                     {
-                        Socket NewSocket = _Server.Accept();
-                        if (NewSocket != null)
+                        // Accept an incoming connection
+                        if (_Server.CanAccept(500)) // 1/2 of a second
                         {
-                            // TODO Need to pass in accepted protocols and retrieve requested server and ignore /ping
-                            WebSocketConnection NewConnection = new WebSocketConnection(true);
-                            if (NewConnection.Open(NewSocket))
+                            Socket NewSocket = _Server.Accept();
+                            if (NewSocket != null)
                             {
-                                RaiseMessageEvent("Connection accepted from " + NewConnection.GetRemoteIP() + ":" + NewConnection.GetRemotePort());
+                                // TODO Need to pass in accepted protocols and retrieve requested server and ignore /ping
+                                WebSocketConnection NewConnection = new WebSocketConnection(true);
+                                if (NewConnection.Open(NewSocket))
+                                {
+                                    RaiseMessageEvent("Connection accepted from " + NewConnection.GetRemoteIP() + ":" + NewConnection.GetRemotePort());
+                                    
+                                    string MessageText = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\r\n", "TODO scheme", NewConnection.GetRemoteIP(), NewConnection.GetRemotePort(), "TODO clientConnection.ConnectionInfo.Path", "TODO clientConnection.ConnectionInfo.NegotiatedSubProtocol");
+                                    byte[] MessageBytes = Encoding.ASCII.GetBytes(MessageText);
+                                    LogStream.Write(MessageBytes, 0, MessageBytes.Length);
+                                    LogStream.Flush();
 
-                                WebSocketClientThread NewClient = new WebSocketClientThread(NewConnection);
-                                NewClient.ErrorMessageEvent += new EventHandler<StringEventArgs>(ProxyClient_ErrorMessageEvent);
-                                NewClient.MessageEvent += new EventHandler<StringEventArgs>(ProxyClient_MessageEvent);
-                                NewClient.Start();
-                            }
-                            else
-                            {
-                                RaiseErrorMessageEvent("Invalid WebSocket connection from " + NewConnection.GetRemoteIP() + ":" + NewConnection.GetRemotePort().ToString());
+                                    WebSocketClientThread NewClient = new WebSocketClientThread(NewConnection);
+                                    NewClient.ErrorMessageEvent += new EventHandler<StringEventArgs>(ProxyClient_ErrorMessageEvent);
+                                    NewClient.MessageEvent += new EventHandler<StringEventArgs>(ProxyClient_MessageEvent);
+                                    NewClient.Start();
+                                }
+                                else
+                                {
+                                    RaiseErrorMessageEvent("Invalid WebSocket connection from " + NewConnection.GetRemoteIP() + ":" + NewConnection.GetRemotePort().ToString());
+                                }
                             }
                         }
                     }
