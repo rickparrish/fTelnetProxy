@@ -6,7 +6,7 @@ namespace RandM.RMLib
 {
     public class WebSocketServerThread : RMThread
     {
-        public event EventHandler<ConnectionAcceptedEventArgs> ConnectionAcceptedEvent = null;
+        // TODO Handle outputting to fTelnetProxy-Connections.log
         public event EventHandler<StringEventArgs> ErrorMessageEvent = null;
         public event EventHandler<StringEventArgs> MessageEvent = null;
 
@@ -33,10 +33,10 @@ namespace RandM.RMLib
                         Socket NewSocket = _Server.Accept();
                         if (NewSocket != null)
                         {
+                            // TODO Need to pass in accepted protocols and retrieve requested server and ignore /ping
                             WebSocketConnection NewConnection = new WebSocketConnection(true);
                             if (NewConnection.Open(NewSocket))
                             {
-                                ConnectionAcceptedEventArgs.Raise(this, ConnectionAcceptedEvent, _Address, _Port, NewConnection.GetRemoteIP(), NewConnection.GetRemotePort());
                                 RaiseMessageEvent("Connection accepted from " + NewConnection.GetRemoteIP() + ":" + NewConnection.GetRemotePort());
 
                                 WebSocketClientThread NewClient = new WebSocketClientThread(NewConnection);

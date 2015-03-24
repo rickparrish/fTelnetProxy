@@ -45,6 +45,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Config.cs" />
     <Compile Include="fTelnetProxy.cs" />
     <Compile Include="ProjectInstaller.cs">
       <SubType>Component</SubType>
