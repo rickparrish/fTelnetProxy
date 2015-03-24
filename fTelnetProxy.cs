@@ -11,7 +11,6 @@ namespace RandM.fTelnetProxy
         private FileStream _LogStream = null;
         private object _LogStreamLock = new object();
 
-        FlashSocketPolicyServerThread _FlashSocketPolicyServer = null;
         WebSocketServerThread _WebSocketServer = null;
 
         public fTelnetProxy()
@@ -21,25 +20,10 @@ namespace RandM.fTelnetProxy
             if (Config.Default.Loaded | ParseCommandLineArgs())
             {
                 MessageEvent(null, new StringEventArgs("fTelnetProxy Starting Up"));
-
-                MessageEvent(null, new StringEventArgs("Starting Flash Socket Policy Thread"));
-                try
-                {
-                    _FlashSocketPolicyServer = new FlashSocketPolicyServerThread("0.0.0.0", 843, "1123"); // TODO 0.0.0.0, 843, 1123
-                    _FlashSocketPolicyServer.ErrorMessageEvent += ErrorMessageEvent;
-                    _FlashSocketPolicyServer.MessageEvent += MessageEvent;
-                    _FlashSocketPolicyServer.Start();
-                }
-                catch (Exception ex)
-                {
-                    ErrorMessageEvent(null, new StringEventArgs("Failed to start Flash Socket Policy Server Thread: " + ex.Message));
-                    _FlashSocketPolicyServer = null;
-                }
-
                 MessageEvent(null, new StringEventArgs("Starting WebSocket Proxy Thread"));
                 try
                 {
-                    _WebSocketServer = new WebSocketServerThread("0.0.0.0", Config.Default.WsPort); // TODO wss://
+                    _WebSocketServer = new WebSocketServerThread("0.0.0.0", Config.Default.ListenPort); // TODO wss://
                     _WebSocketServer.ErrorMessageEvent += ErrorMessageEvent;
                     _WebSocketServer.MessageEvent += MessageEvent;
                     _WebSocketServer.Start();
@@ -52,6 +36,7 @@ namespace RandM.fTelnetProxy
             }
             else
             {
+                ShowHelp();
             }
         }
 
@@ -63,11 +48,6 @@ namespace RandM.fTelnetProxy
             {
                 MessageEvent(null, new StringEventArgs("Stopping WebSocket Proxy Thread"));
                 _WebSocketServer.Stop();
-            }
-            if (_FlashSocketPolicyServer != null)
-            {
-                MessageEvent(null, new StringEventArgs("Stopping Flash Socket Policy Thread"));
-                _FlashSocketPolicyServer.Stop();
             }
 
             MessageEvent(null, new StringEventArgs("fTelnetProxy Terminated" + Environment.NewLine + Environment.NewLine));
@@ -115,51 +95,41 @@ namespace RandM.fTelnetProxy
                         i += 1;
                         Config.Default.CertFilename = Args[i];
                         break;
+
                     case "-?":
                     case "-h":
                     case "--help":
                         ShowHelp();
                         return false;
+
+                    case "-p":
+                    case "--port":
+                        i += 1;
+                        try
+                        {
+                            Config.Default.ListenPort = Convert.ToInt16(Args[i]);
+                        }
+                        catch (Exception)
+                        {
+                            Console.WriteLine();
+                            Console.WriteLine("Invalid port '" + Args[i] + "'");
+                            Console.WriteLine();
+                            return false;
+                        }
+                        break;
+
                     case "-pw":
                     case "--password":
                         i += 1;
                         Config.Default.CertPassword = Args[i];
                         break;
-                    case "-ws":
-                    case "--ws":
-                        i += 1;
-                        try
-                        {
-                            Config.Default.WsPort = Convert.ToInt16(Args[i]);
-                        }
-                        catch (Exception)
-                        {
-                            Console.WriteLine();
-                            Console.WriteLine("Invalid port '" + Args[i] + "'");
-                            Console.WriteLine();
-                            return false;
-                        }
-                        break;
-                    case "-wss":
-                    case "--wss":
-                        i += 1;
-                        try
-                        {
-                            Config.Default.WssPort = Convert.ToInt16(Args[i]);
-                        }
-                        catch (Exception)
-                        {
-                            Console.WriteLine();
-                            Console.WriteLine("Invalid port '" + Args[i] + "'");
-                            Console.WriteLine();
-                            return false;
-                        }
-                        break;
+
                     case "-r":
                     case "--relay":
                         i += 1;
                         Config.Default.RelayFilename = Args[i];
                         break;
+
                     case "-t":
                     case "--target":
                         i += 1;
@@ -183,6 +153,7 @@ namespace RandM.fTelnetProxy
                             Config.Default.TargetHostname = Args[i];
                         }
                         break;
+
                     default:
                         ShowHelp();
                         Console.WriteLine();
@@ -194,44 +165,7 @@ namespace RandM.fTelnetProxy
                 }
             }
 
-            bool Result = false;
-
-            if (Config.Default.WsPort > 0)
-            {
-                Result = true;
-            }
-
-            if (Config.Default.WssPort > 0)
-            {
-                if (File.Exists(Config.Default.CertFilename))
-                {
-                    Result = true;
-                }
-                else
-                {
-                    ShowHelp();
-                    Console.WriteLine();
-                    Console.WriteLine("Error:");
-                    Console.WriteLine();
-                    Console.WriteLine("  Passing --wss also requires passing --cert");
-                    Console.WriteLine();
-                    return false;
-                }
-            }
-
-
-            if (!Result)
-            {
-                ShowHelp();
-                Console.WriteLine();
-                Console.WriteLine("Error:");
-                Console.WriteLine();
-                Console.WriteLine("  Either (or both) --ws or --wss must be passed");
-                Console.WriteLine();
-                return false;
-            }
-
-            return Result;
+            return true;
         }
 
         private void ShowHelp()

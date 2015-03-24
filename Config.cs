@@ -9,11 +9,10 @@ namespace RandM.fTelnetProxy
     {
         public string CertFilename { get; set; }
         public string CertPassword { get; set; }
+        public int ListenPort { get; set; }
         public string RelayFilename { get; set; }
         public string TargetHostname { get; set; }
         public int TargetPort { get; set; }
-        public int WsPort { get; set; }
-        public int WssPort { get; set; }
 
         static public Config Default = new Config();
 
@@ -21,11 +20,10 @@ namespace RandM.fTelnetProxy
         {
             CertFilename = "";
             CertPassword = "";
+            ListenPort = 1123;
             RelayFilename = "";
             TargetHostname = "localhost";
             TargetPort = 23;
-            WsPort = 0;
-            WssPort = 0;
 
             base.Load();
         }
