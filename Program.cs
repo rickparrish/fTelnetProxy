@@ -12,14 +12,7 @@ namespace RandM.fTelnetProxy
         /// </summary>
         static void Main()
         {
-            if (!Environment.UserInteractive)
-                // running as service
-                using (var fTelnetProxyService = new Service())
-                {
-                    ServiceBase.Run(fTelnetProxyService);
-                }
-            else
-            {
+            if (Environment.UserInteractive)
                 // running as console app
                 using (var fTelnetProxyApp = new fTelnetProxy())
                 {
@@ -27,6 +20,13 @@ namespace RandM.fTelnetProxy
                     {
                         Console.WriteLine("Press Q to Quit...");
                     } while (Console.ReadKey(true).Key != ConsoleKey.Q);
+                }
+            else
+            {
+                // running as service
+                using (var fTelnetProxyService = new Service())
+                {
+                    ServiceBase.Run(fTelnetProxyService);
                 }
             }
         }
