@@ -16,7 +16,7 @@ namespace RandM.fTelnetProxy
 
         static public Config Default = new Config();
 
-        public Config(): base()
+        public Config(): base(ConfigSaveLocation.Relative)
         {
             CertFilename = "";
             CertPassword = "";
@@ -25,7 +25,8 @@ namespace RandM.fTelnetProxy
             TargetHostname = "localhost";
             TargetPort = 23;
 
-            base.Load();
+            // Try to load, and save a new file if load failed
+            if (!base.Load()) base.Save();
         }
     }
 }
