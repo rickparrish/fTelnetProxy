@@ -3,8 +3,9 @@ using System;
 using System.IO;
 using System.Reflection;
 using System.Text;
+using RandM.RMLib;
 
-namespace RandM.RMLib
+namespace RandM.fTelnetProxy
 {
     public class WebSocketClientThread : RMThread
     {
@@ -22,42 +23,80 @@ namespace RandM.RMLib
 
         protected override void Execute()
         {
-            // Read the Host:Port line from fTelnet (should be bbs.ftelnet.ca:23\r\n for example)
-            string HostAndPort = _InConnection.ReadLn(5000);
-            if (_InConnection.ReadTimedOut)
-            {
-                RaiseErrorMessageEvent("Timeout waiting for Host:Port");
-                _InConnection.Close();
-                return;
-            }
+            // Defaults for redirect location
+            string Hostname = Config.Default.TargetHostname;
+            int Port = Config.Default.TargetPort;
 
-            // Split the Host:Port into their respective pieces
-            string Host = "";
-            int Port = 23;
-            if (HostAndPort.Contains(":"))
+            // Check if we should override the defaults with user selected values
+            if (!string.IsNullOrEmpty(Config.Default.RelayFilename))
             {
-                Host = HostAndPort.Split(':')[0];
-                int.TryParse(HostAndPort.Split(':')[1], out Port);
-            }
-            else
-            {
-                Host = HostAndPort;
-            }
+                bool CanRelay = false;
 
-            // Ensure the requested port is 23
-            // TODO Add an option to allow or deny non-23 destination
-            if (Port != 23)
-            {
-                RaiseErrorMessageEvent("Refused non-port-23 destination request: " + HostAndPort);
-                _InConnection.Close();
-                return;
+                string[] HostAndPort = _InConnection.Header["Path"].Split('/');
+                if ((HostAndPort.Length == 3) && (int.TryParse(HostAndPort[2], out Port)))
+                {
+                    Hostname = HostAndPort[1];
+
+                    if (File.Exists(Config.Default.RelayFilename))
+                    {
+                        try
+                        {
+                            string[] AllowedHosts = File.ReadAllLines(Config.Default.RelayFilename);
+                            if (AllowedHosts.Length > 0)
+                            {
+                                // Check for a whitelisted port
+                                string[] AllowedPorts = AllowedHosts[0].Split(',');
+                                foreach (string AllowedPort in AllowedPorts)
+                                {
+                                    if (AllowedPort == Port.ToString())
+                                    {
+                                        CanRelay = true;
+                                        break;
+                                    }
+                                }
+
+                                // Not a whitelisted port, check for a whitelisted host
+                                if (!CanRelay)
+                                {
+                                    string RequestedHostPort = Hostname + ":" + Port.ToString();
+                                    foreach (string AllowedHost in AllowedHosts)
+                                    {
+                                        if (AllowedHost == RequestedHostPort)
+                                        {
+                                            CanRelay = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            RaiseErrorMessageEvent("Error reading relay file '" + Config.Default.RelayFilename + "' (Exception=" + ex.Message + ")");
+                        }
+                    }
+                    else
+                    {
+                        RaiseErrorMessageEvent("Relay file '" + Config.Default.RelayFilename + "' does not exist");
+                    }
+                }
+
+                if (!CanRelay)
+                {
+                    RaiseMessageEvent("Rejecting request for " + Hostname + ":" + Port.ToString());
+                    _InConnection.WriteLn("Sorry, for security reasons this proxy won't connect to " + Hostname + ":" + Port.ToString());
+                    Thread.Sleep(2500);
+                    _InConnection.Close();
+                    return;
+                }
             }
 
             // Try to connect to the desired Host and Port
+            _InConnection.WriteLn("Connecting to " + Hostname + ":" + Port.ToString() + "...");
             _OutConnection = new TcpConnection();
-            if (_OutConnection.Connect(Host, Port))
+            if (_OutConnection.Connect(Hostname, Port))
             {
-                RaiseMessageEvent("Connected to " + HostAndPort);
+                RaiseMessageEvent("Connected to " + Hostname + ":" + Port.ToString());
 
                 bool DoSleep = true;
 
@@ -90,7 +129,10 @@ namespace RandM.RMLib
             }
             else
             {
-                RaiseErrorMessageEvent("Unable to connect to " + HostAndPort);
+                RaiseErrorMessageEvent("Unable to connect to " + Hostname + ":" + Port.ToString());
+                _InConnection.WriteLn("Sorry, I wasn't able to connect to " + Hostname + ":" + Port.ToString());
+                Thread.Sleep(2500);
+                _InConnection.Close();
             }
         }
 

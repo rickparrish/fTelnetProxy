@@ -3,8 +3,10 @@ using System;
 using System.Net.Sockets;
 using System.IO;
 using System.Text;
+using RandM.RMLib;
+using System.Threading;
 
-namespace RandM.RMLib
+namespace RandM.fTelnetProxy
 {
     public class WebSocketServerThread : RMThread
     {
@@ -54,7 +56,15 @@ namespace RandM.RMLib
                                 }
                                 else
                                 {
-                                    RaiseErrorMessageEvent("Invalid WebSocket connection from " + NewConnection.GetRemoteIP() + ":" + NewConnection.GetRemotePort().ToString());
+                                    if (NewConnection.FlashPolicyFileRequest)
+                                    {
+                                        RaiseMessageEvent("Answered flash policy file request from " + NewConnection.GetRemoteIP() + ":" + NewConnection.GetRemotePort().ToString());
+                                    }
+                                    else
+                                    {
+                                        RaiseErrorMessageEvent("Invalid WebSocket connection from " + NewConnection.GetRemoteIP() + ":" + NewConnection.GetRemotePort().ToString());
+                                    }
+                                    NewConnection.Close();
                                 }
                             }
                         }
