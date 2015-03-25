@@ -28,66 +28,69 @@ namespace RandM.fTelnetProxy
             int Port = Config.Default.TargetPort;
 
             // Check if we should override the defaults with user selected values
-            if (!string.IsNullOrEmpty(Config.Default.RelayFilename))
+            if (_InConnection.Header["Path"] != "/")
             {
-                bool CanRelay = false;
-
-                string[] HostAndPort = _InConnection.Header["Path"].Split('/');
-                if ((HostAndPort.Length == 3) && (int.TryParse(HostAndPort[2], out Port)))
+                if (!string.IsNullOrEmpty(Config.Default.RelayFilename))
                 {
-                    Hostname = HostAndPort[1];
+                    bool CanRelay = false;
 
-                    if (File.Exists(Config.Default.RelayFilename))
+                    string[] HostAndPort = _InConnection.Header["Path"].Split('/');
+                    if ((HostAndPort.Length == 3) && (int.TryParse(HostAndPort[2], out Port)))
                     {
-                        try
-                        {
-                            string[] AllowedHosts = File.ReadAllLines(Config.Default.RelayFilename);
-                            if (AllowedHosts.Length > 0)
-                            {
-                                // Check for a whitelisted port
-                                string[] AllowedPorts = AllowedHosts[0].Split(',');
-                                foreach (string AllowedPort in AllowedPorts)
-                                {
-                                    if (AllowedPort == Port.ToString())
-                                    {
-                                        CanRelay = true;
-                                        break;
-                                    }
-                                }
+                        Hostname = HostAndPort[1];
 
-                                // Not a whitelisted port, check for a whitelisted host
-                                if (!CanRelay)
+                        if (File.Exists(Config.Default.RelayFilename))
+                        {
+                            try
+                            {
+                                string[] AllowedHosts = File.ReadAllLines(Config.Default.RelayFilename);
+                                if (AllowedHosts.Length > 0)
                                 {
-                                    string RequestedHostPort = Hostname + ":" + Port.ToString();
-                                    foreach (string AllowedHost in AllowedHosts)
+                                    // Check for a whitelisted port
+                                    string[] AllowedPorts = AllowedHosts[0].Split(',');
+                                    foreach (string AllowedPort in AllowedPorts)
                                     {
-                                        if (AllowedHost == RequestedHostPort)
+                                        if (AllowedPort == Port.ToString())
                                         {
                                             CanRelay = true;
                                             break;
                                         }
                                     }
+
+                                    // Not a whitelisted port, check for a whitelisted host
+                                    if (!CanRelay)
+                                    {
+                                        string RequestedHostPort = Hostname + ":" + Port.ToString();
+                                        foreach (string AllowedHost in AllowedHosts)
+                                        {
+                                            if (AllowedHost == RequestedHostPort)
+                                            {
+                                                CanRelay = true;
+                                                break;
+                                            }
+                                        }
+                                    }
                                 }
                             }
+                            catch (Exception ex)
+                            {
+                                RaiseErrorMessageEvent("Error reading relay file '" + Config.Default.RelayFilename + "' (Exception=" + ex.Message + ")");
+                            }
                         }
-                        catch (Exception ex)
+                        else
                         {
-                            RaiseErrorMessageEvent("Error reading relay file '" + Config.Default.RelayFilename + "' (Exception=" + ex.Message + ")");
+                            RaiseErrorMessageEvent("Relay file '" + Config.Default.RelayFilename + "' does not exist");
                         }
                     }
-                    else
-                    {
-                        RaiseErrorMessageEvent("Relay file '" + Config.Default.RelayFilename + "' does not exist");
-                    }
-                }
 
-                if (!CanRelay)
-                {
-                    RaiseMessageEvent("Rejecting request for " + Hostname + ":" + Port.ToString());
-                    _InConnection.WriteLn("Sorry, for security reasons this proxy won't connect to " + Hostname + ":" + Port.ToString());
-                    Thread.Sleep(2500);
-                    _InConnection.Close();
-                    return;
+                    if (!CanRelay)
+                    {
+                        RaiseMessageEvent("Rejecting request for " + Hostname + ":" + Port.ToString());
+                        _InConnection.WriteLn("Sorry, for security reasons this proxy won't connect to " + Hostname + ":" + Port.ToString());
+                        Thread.Sleep(2500);
+                        _InConnection.Close();
+                        return;
+                    }
                 }
             }
 

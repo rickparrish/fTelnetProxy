@@ -5,6 +5,7 @@ using System.IO;
 using System.Text;
 using RandM.RMLib;
 using System.Threading;
+using System.Security.Cryptography.X509Certificates;
 
 namespace RandM.fTelnetProxy
 {
@@ -40,6 +41,17 @@ namespace RandM.fTelnetProxy
                             {
                                 // TODO Need to pass in accepted protocols and retrieve requested server and ignore /ping
                                 WebSocketConnection NewConnection = new WebSocketConnection(true);
+                                if (Config.Default.CertFilename != "")
+                                {
+                                    if (File.Exists(Config.Default.CertFilename))
+                                    {
+                                        NewConnection.Certificate = new X509Certificate2(Config.Default.CertFilename, Config.Default.CertPassword);
+                                    }
+                                    else
+                                    {
+                                        RaiseErrorMessageEvent("Cert file '" + Config.Default.CertFilename + "' not found");
+                                    }
+                                }
                                 if (NewConnection.Open(NewSocket))
                                 {
                                     RaiseMessageEvent("Connection accepted from " + NewConnection.GetRemoteIP() + ":" + NewConnection.GetRemotePort());
