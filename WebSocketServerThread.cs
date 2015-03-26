@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿// TODO Check for code that needs to be rewritten
+using System.Collections.Generic;
 using System;
 using System.Net.Sockets;
 using System.IO;

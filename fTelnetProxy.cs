@@ -1,4 +1,5 @@
-﻿using RandM.RMLib;
+﻿// TODO Check for code that needs to be rewritten
+using RandM.RMLib;
 using System;
 using System.IO;
 using System.Reflection;
@@ -64,21 +65,29 @@ namespace RandM.fTelnetProxy
             string[] Args = Environment.GetCommandLineArgs();
             for (int i = 1; i < Args.Length; i++)
             {
+                // TODO This is cumbersome
                 switch (Args[i])
                 {
+                    case "/c":
                     case "-c":
+                    case "/cert":
                     case "--cert":
                         i += 1;
                         Config.Default.CertFilename = Args[i];
                         break;
 
+                    case "/?":
                     case "-?":
+                    case "/h":
                     case "-h":
+                    case "/help":
                     case "--help":
                         ShowHelp();
                         return false;
 
+                    case "/l":
                     case "-l":
+                    case "/loglevel":
                     case "--loglevel":
                         i += 1;
                         try
@@ -94,7 +103,9 @@ namespace RandM.fTelnetProxy
                         }
                         break;
 
+                    case "/p":
                     case "-p":
+                    case "/port":
                     case "--port":
                         i += 1;
                         try
@@ -110,19 +121,25 @@ namespace RandM.fTelnetProxy
                         }
                         break;
 
+                    case "/pw":
                     case "-pw":
+                    case "/password":
                     case "--password":
                         i += 1;
                         Config.Default.CertPassword = Args[i];
                         break;
 
+                    case "/r":
                     case "-r":
+                    case "/relay":
                     case "--relay":
                         i += 1;
                         Config.Default.RelayFilename = Args[i];
                         break;
 
+                    case "/t":
                     case "-t":
+                    case "/target":
                     case "--target":
                         i += 1;
                         if (Args[i].Contains(":"))
@@ -147,12 +164,7 @@ namespace RandM.fTelnetProxy
                         break;
 
                     default:
-                        ShowHelp();
-                        Console.WriteLine();
-                        Console.WriteLine("Error:");
-                        Console.WriteLine();
-                        Console.WriteLine("  Unknown parameter '" + Args[i] + "'");
-                        Console.WriteLine();
+                        RMLog.Error("Unknown parameter: '" + Args[i] + "'");
                         return false;
                 }
             }
@@ -179,42 +191,35 @@ namespace RandM.fTelnetProxy
             if (Environment.UserInteractive)
             {
                 Console.WriteLine();
-                Console.WriteLine("Usage: FleckProxy.exe [options]");
+                Console.WriteLine("Usage: " + Path.GetFileName(ProcessUtils.ExecutablePath) + " [options]");
                 Console.WriteLine();
-                Console.WriteLine("Options:");
+                Console.WriteLine("Service options:");
                 Console.WriteLine();
-                Console.WriteLine("  -ws <port>                 Port to listen for ws:// connections on");
-                Console.WriteLine("  --ws <port>                Not supplying will disable ws:// connections");
+                Console.WriteLine("  /i, -i, /install, --install       Install the service");
+                Console.WriteLine();
+                Console.WriteLine("  /u, -u, /uninstall, --uninstall   Uninstall the service"); 
+                Console.WriteLine();
+                Console.WriteLine("Console options:");
+                Console.WriteLine();
+                Console.WriteLine("  -p <port>                  Port to listen for connections on");
+                Console.WriteLine("  --port <port>              Default is 1123");
                 Console.WriteLine();
                 Console.WriteLine("  -t <host:port>             Telnet server to redirect to");
                 Console.WriteLine("  --target <host:port>       Default is localhost:23");
                 Console.WriteLine();
-                Console.WriteLine("  -wss <port>                Port to listen for wss:// connections on");
-                Console.WriteLine("  --wss <port>               Not supplying will disable wss:// connections");
-                Console.WriteLine();
                 Console.WriteLine("  -c <filename>              PKCS12 file containing private key and cert chain");
-                Console.WriteLine("  --cert <filename>          Only needed if your site uses https://");
+                Console.WriteLine("  --cert <filename>          Needed if your site uses https://");
                 Console.WriteLine();
-                Console.WriteLine("  -pw <password>             Password to use to open the PKCS12 file");
-                Console.WriteLine("  --password <password>      Only needed if PKCS12 file is password protected");
+                Console.WriteLine("  -pw <password>             Password to open the PKCS12 file");
+                Console.WriteLine("  --password <password>      Needed if your PKCS12 file is password protected");
                 Console.WriteLine();
-                Console.WriteLine("  -l <level>                 Set log level (Trace, Debug, Info, Warning, Error)");
+                Console.WriteLine("  -l <level>                 Log level (Trace, Debug, Info, Warning, Error)");
                 Console.WriteLine("  --loglevel <level>         Default is Info");
                 Console.WriteLine();
                 Console.WriteLine("  -?, -h, --help             Display this screen");
                 Console.WriteLine();
-                Console.WriteLine("Notes:");
-                Console.WriteLine();
-                Console.WriteLine("- You must pass a port via either --ws (plain ws:// connection) or");
-                Console.WriteLine("  --wss (ssl wss:// connection) to start the server.  You can also pass both");
-                Console.WriteLine("  plain and ssl ports by using --ws and --wss at the same time");
-                Console.WriteLine();
-                Console.WriteLine("- If you pass a port via --wss, then you must also pass a PKCS12 certificate");
-                Console.WriteLine("  via the --cert parameter.  If the certificate is password protected, then");
-                Console.WriteLine("  you must also pass the --password parameter.  Note the password may be");
-                Console.WriteLine("  visible to other users of the system, so you may be better off with a");
-                Console.WriteLine("  password-less certificate that is secured so only you have access to read it");
                 //Console.WriteLine("345678901234567890123456789012345678901234567890123456789012345678901234567890");
+                Environment.Exit(1);
             }
         }
     }
