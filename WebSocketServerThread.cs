@@ -3,8 +3,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net.Sockets;
-using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using System.Threading;
 
 namespace RandM.fTelnetProxy
 {
@@ -12,6 +12,7 @@ namespace RandM.fTelnetProxy
     {
         private string _Address;
         private List<WebSocketClientThread> ClientThreads = new List<WebSocketClientThread>();
+        private object ClientThreadsLock = new object();
         private int _Port;
         private TcpConnection _Server = null;
 
@@ -23,9 +24,12 @@ namespace RandM.fTelnetProxy
 
         void ClientThread_FinishEvent(object sender, EventArgs e)
         {
-            if ((sender is WebSocketClientThread) && ClientThreads.Contains((WebSocketClientThread)sender))
+            lock (ClientThreadsLock)
             {
-                ClientThreads.Remove((WebSocketClientThread)sender);
+                if ((sender is WebSocketClientThread) && ClientThreads.Contains((WebSocketClientThread)sender))
+                {
+                    ClientThreads.Remove((WebSocketClientThread)sender);
+                }
             }
         }
 
@@ -76,7 +80,10 @@ namespace RandM.fTelnetProxy
 
                                             WebSocketClientThread ClientThread = new WebSocketClientThread(NewConnection);
                                             ClientThread.FinishEvent += ClientThread_FinishEvent;
-                                            ClientThreads.Add(ClientThread);
+                                            lock (ClientThreadsLock)
+                                            {
+                                                ClientThreads.Add(ClientThread);
+                                            }
                                             ClientThread.Start();
                                         }
                                     }
@@ -102,15 +109,24 @@ namespace RandM.fTelnetProxy
                     }
 
                     // Stop client threads
-                    foreach (var ClientThread in ClientThreads)
+                    int ClientThreadCount = 0;
+                    lock (ClientThreadsLock)
                     {
-                        if (ClientThread != null) ClientThread.Stop();
+                        foreach (var ClientThread in ClientThreads)
+                        {
+                            if (ClientThread != null) ClientThread.Stop();
+                        }
+                        ClientThreadCount = ClientThreads.Count;
                     }
 
                     // Wait for client threads
-                    foreach (var ClientThread in ClientThreads)
+                    while (ClientThreadCount > 0)
                     {
-                        if (ClientThread != null) ClientThread.WaitFor();
+                        lock (ClientThreadsLock)
+                        {
+                            ClientThreadCount = ClientThreads.Count;
+                        }
+                        Thread.Sleep(100);
                     }
                 }
             }
