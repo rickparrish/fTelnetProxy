@@ -79,6 +79,7 @@ namespace RandM.fTelnetProxy
                                             LogStream.Flush();
 
                                             WebSocketClientThread NewClient = new WebSocketClientThread(NewConnection);
+                                            NewClient.FinishEvent += NewClient_FinishEvent;
                                             ClientThreads.Add(NewClient);
                                             NewClient.Start();
                                         }
@@ -121,6 +122,11 @@ namespace RandM.fTelnetProxy
             {
                 RMLog.Error("WebSocket Server Thread: Unable to listen on " + _Address + ":" + _Port);
             }
+        }
+
+        void NewClient_FinishEvent(object sender, EventArgs e)
+        {
+            ClientThreads.Remove((WebSocketClientThread)sender);
         }
 
         public override void Stop()
