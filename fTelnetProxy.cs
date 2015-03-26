@@ -191,15 +191,18 @@ namespace RandM.fTelnetProxy
             if (Environment.UserInteractive)
             {
                 Console.WriteLine();
-                Console.WriteLine("Usage: " + Path.GetFileName(ProcessUtils.ExecutablePath) + " [options]");
+                Console.WriteLine("Usage: " + Path.GetFileName(ProcessUtils.ExecutablePath) + " [parameters]");
                 Console.WriteLine();
-                Console.WriteLine("Service options:");
+                Console.WriteLine("Service-mode parameters:");
                 Console.WriteLine();
                 Console.WriteLine("  /i, -i, /install, --install       Install the service");
                 Console.WriteLine();
                 Console.WriteLine("  /u, -u, /uninstall, --uninstall   Uninstall the service"); 
                 Console.WriteLine();
-                Console.WriteLine("Console options:");
+                Console.WriteLine("  Edit the " + Path.GetFileNameWithoutExtension(ProcessUtils.ExecutablePath) + ".ini file to configure");
+                Console.WriteLine();
+                Console.WriteLine();
+                Console.WriteLine("Console-mode parameters:");
                 Console.WriteLine();
                 Console.WriteLine("  -p <port>                  Port to listen for connections on");
                 Console.WriteLine("  --port <port>              Default is 1123");
