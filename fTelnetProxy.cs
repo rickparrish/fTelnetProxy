@@ -74,13 +74,11 @@ namespace RandM.fTelnetProxy
 
                 for (int i = 1; i < Args.Length; i++)
                 {
-                    // TODO This is cumbersome
-                    switch (Args[i])
+                    string Arg = Args[i].TrimStart('/').TrimStart('-');
+                    switch (Arg)
                     {
-                        case "/c":
-                        case "-c":
-                        case "/cert":
-                        case "--cert":
+                        case "c":
+                        case "cert":
                             i += 1;
                             if (File.Exists(Args[i]))
                             {
@@ -93,19 +91,14 @@ namespace RandM.fTelnetProxy
                             }
                             break;
 
-                        case "/?":
-                        case "-?":
-                        case "/h":
-                        case "-h":
-                        case "/help":
-                        case "--help":
+                        case "?":
+                        case "h":
+                        case "help":
                             ShowHelp();
                             return;
 
-                        case "/l":
-                        case "-l":
-                        case "/loglevel":
-                        case "--loglevel":
+                        case "l":
+                        case "loglevel":
                             i += 1;
                             try
                             {
@@ -118,10 +111,8 @@ namespace RandM.fTelnetProxy
                             }
                             break;
 
-                        case "/p":
-                        case "-p":
-                        case "/port":
-                        case "--port":
+                        case "p":
+                        case "port":
                             i += 1;
                             try
                             {
@@ -134,19 +125,15 @@ namespace RandM.fTelnetProxy
                             }
                             break;
 
-                        case "/pw":
-                        case "-pw":
-                        case "/password":
-                        case "--password":
+                        case "pw":
+                        case "password":
                             i += 1;
                             Config.Default.CertPassword = Args[i];
                             RMLog.Info("-Cert password..yes (hidden)");
                             break;
 
-                        case "/r":
-                        case "-r":
-                        case "/relay":
-                        case "--relay":
+                        case "r":
+                        case "relay":
                             i += 1;
                             if (File.Exists(Args[i]))
                             {
@@ -159,10 +146,8 @@ namespace RandM.fTelnetProxy
                             }
                             break;
 
-                        case "/t":
-                        case "-t":
-                        case "/target":
-                        case "--target":
+                        case "t":
+                        case "target":
                             i += 1;
                             if (Args[i].Contains(":"))
                             {

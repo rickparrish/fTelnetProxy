@@ -21,21 +21,17 @@ namespace RandM.fTelnetProxy
                 {
                     try
                     {
-                        string parameter = string.Concat(args);
+                        string parameter = string.Concat(args).TrimStart('/').TrimStart('-');
                         switch (parameter)
                         {
-                            case "/i":
-                            case "-i":
-                            case "/install":
-                            case "--install":
+                            case "i":
+                            case "install":
                                 Console.WriteLine("Installing service...");
                                 ManagedInstallerClass.InstallHelper(new string[] { Assembly.GetExecutingAssembly().Location });
                                 Console.WriteLine("Service installed successfully!");
                                 return;
-                            case "/u":
-                            case "-u":
-                            case "/uninstall":
-                            case "--uninstall":
+                            case "u":
+                            case "uninstall":
                                 Console.WriteLine("Uninstalling service...");
                                 ManagedInstallerClass.InstallHelper(new string[] { "/u", Assembly.GetExecutingAssembly().Location });
                                 Console.WriteLine("Service uninstalled successfully!");
