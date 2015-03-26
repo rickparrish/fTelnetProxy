@@ -46,12 +46,17 @@ namespace RandM.fTelnetProxy
                 }
 
                 // If we get here, we're running as console app
-                using (var fTelnetProxyApp = new fTelnetProxy())
+                using (var fTelnetProxy = new fTelnetProxy())
                 {
+                    fTelnetProxy.Start();
+
                     do
                     {
                         Console.WriteLine("Press Q to Quit...");
                     } while (Console.ReadKey(true).Key != ConsoleKey.Q);
+                    Console.WriteLine("Exiting...");
+
+                    fTelnetProxy.Stop();
                 }
             }
             else

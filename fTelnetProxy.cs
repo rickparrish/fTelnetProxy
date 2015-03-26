@@ -9,57 +9,12 @@ namespace RandM.fTelnetProxy
     {
         private FileStream _LogStream = null;
         private object _LogStreamLock = new object();
+        private bool _Stopping = false;
         private WebSocketServerThread _WebSocketServer = null;
-
-        public fTelnetProxy()
-        {
-            RMLog.Handler += RMLog_Handler;
-
-            try
-            {
-                _LogStream = new FileStream(Path.ChangeExtension(ProcessUtils.ExecutablePath, ".log"), FileMode.Append, FileAccess.Write, FileShare.Read);
-            }
-            catch (Exception ex)
-            {
-                RMLog.Exception(ex, "Failed to open " + Path.ChangeExtension(ProcessUtils.ExecutablePath, ".log") + " for writing");
-                Environment.Exit(1);
-            }
-
-            RMLog.Info("\r\n\r\nfTelnetProxy Starting Up");
-
-            Config.Default.Load();
-            ParseCommandLineArgs();
-
-            try
-            {
-                RMLog.Info("Starting WebSocket Proxy Thread");
-                _WebSocketServer = new WebSocketServerThread("0.0.0.0", Config.Default.ListenPort);
-                _WebSocketServer.Start();
-            }
-            catch (Exception ex)
-            {
-                RMLog.Exception(ex, "Failed to start WebSocket Proxy Thread");
-                Environment.Exit(1);
-            }
-        }
 
         public void Dispose()
         {
-            RMLog.Info("fTelnetProxy Shutting Down");
-
-            if (_WebSocketServer != null)
-            {
-                RMLog.Info("Stopping WebSocket Proxy Thread");
-                _WebSocketServer.Stop();
-            }
-
-            RMLog.Info("fTelnetProxy Terminated");
-
-            if (_LogStream != null)
-            {
-                _LogStream.Close();
-                _LogStream.Dispose();
-            }
+            if (!_Stopping) Stop();
         }
 
         private void ParseCommandLineArgs()
@@ -231,6 +186,64 @@ namespace RandM.fTelnetProxy
                 //Console.WriteLine("345678901234567890123456789012345678901234567890123456789012345678901234567890");
                 Environment.Exit(1);
             }
+        }
+
+        public void Start()
+        {
+            RMLog.Handler += RMLog_Handler;
+
+            try
+            {
+                _LogStream = new FileStream(Path.ChangeExtension(ProcessUtils.ExecutablePath, ".log"), FileMode.Append, FileAccess.Write, FileShare.Read);
+            }
+            catch (Exception ex)
+            {
+                RMLog.Exception(ex, "Failed to open " + Path.ChangeExtension(ProcessUtils.ExecutablePath, ".log") + " for writing");
+                Environment.Exit(1);
+            }
+
+            RMLog.Info("fTelnetProxy Starting Up");
+
+            Config.Default.Load();
+            ParseCommandLineArgs();
+
+            try
+            {
+                RMLog.Info("Starting WebSocket proxy thread");
+                _WebSocketServer = new WebSocketServerThread("0.0.0.0", Config.Default.ListenPort);
+                _WebSocketServer.Start();
+            }
+            catch (Exception ex)
+            {
+                RMLog.Exception(ex, "Failed to start WebSocket proxy thread");
+                Environment.Exit(1);
+            }
+        }
+
+        public void Stop()
+        {
+            _Stopping = true;
+
+            RMLog.Info("fTelnetProxy shutting down");
+
+            if (_WebSocketServer != null)
+            {
+                RMLog.Info("Stopping WebSocket proxy thread");
+                _WebSocketServer.Stop();
+                _WebSocketServer.WaitFor();
+            }
+
+            RMLog.Info("fTelnetProxy terminated");
+
+            if (_LogStream != null)
+            {
+                _LogStream.WriteByte(0x0D);
+                _LogStream.WriteByte(0x0A);
+                _LogStream.WriteByte(0x0D);
+                _LogStream.WriteByte(0x0A);
+                _LogStream.Close();
+                _LogStream.Dispose();
+            } 
         }
     }
 }

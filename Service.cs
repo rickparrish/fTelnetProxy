@@ -14,11 +14,12 @@ namespace RandM.fTelnetProxy
         protected override void OnStart(string[] args)
         {
             _fTelnetProxy = new fTelnetProxy();
+            _fTelnetProxy.Start();
         }
 
         protected override void OnStop()
         {
-            _fTelnetProxy.Dispose();
+            _fTelnetProxy.Stop();
         }
     }
 }

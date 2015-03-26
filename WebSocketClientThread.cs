@@ -1,5 +1,4 @@
-﻿// TODO Check for code that needs to be rewritten
-using RandM.RMLib;
+﻿using RandM.RMLib;
 using System;
 using System.IO;
 using System.Reflection;
@@ -10,14 +9,12 @@ namespace RandM.fTelnetProxy
 {
     public class WebSocketClientThread : RMThread
     {
-        public event EventHandler CloseEvent = null;
-
-        private WebSocketConnection _InConnection = null;
-        private TcpConnection _OutConnection = null;
+        private WebSocketConnection _WebSocketConnection = null;
+        private TcpConnection _TcpConnection = null;
 
         public WebSocketClientThread(WebSocketConnection connection)
         {
-            _InConnection = connection;
+            _WebSocketConnection = connection;
         }
 
         protected override void Execute()
@@ -26,21 +23,23 @@ namespace RandM.fTelnetProxy
             string Hostname = Config.Default.TargetHostname;
             int Port = Config.Default.TargetPort;
 
-            // Check if we should override the defaults with user selected values
-            if (_InConnection.Header["Path"] != "/")
+            // Check if user is requesting a custom target
+            if (_WebSocketConnection.Header["Path"] != "/")
             {
+                bool CanRelay = false;
+
+                // Check if program has relaying enabled
                 if (!string.IsNullOrEmpty(Config.Default.RelayFilename))
                 {
-                    bool CanRelay = false;
-
-                    string[] HostAndPort = _InConnection.Header["Path"].Split('/');
+                    string[] HostAndPort = _WebSocketConnection.Header["Path"].Split('/');
                     if ((HostAndPort.Length == 3) && (int.TryParse(HostAndPort[2], out Port)))
                     {
                         Hostname = HostAndPort[1];
 
-                        if (File.Exists(Config.Default.RelayFilename))
+                        try
                         {
-                            try
+                            // Read relay file
+                            if (File.Exists(Config.Default.RelayFilename))
                             {
                                 string[] AllowedHosts = File.ReadAllLines(Config.Default.RelayFilename);
                                 if (AllowedHosts.Length > 0)
@@ -62,7 +61,7 @@ namespace RandM.fTelnetProxy
                                         string RequestedHostPort = Hostname + ":" + Port.ToString();
                                         foreach (string AllowedHost in AllowedHosts)
                                         {
-                                            if (AllowedHost == RequestedHostPort)
+                                            if (AllowedHost.Trim() == RequestedHostPort)
                                             {
                                                 CanRelay = true;
                                                 break;
@@ -70,96 +69,91 @@ namespace RandM.fTelnetProxy
                                         }
                                     }
                                 }
+                                else
+                                {
+                                    RMLog.Error("Relay file is empty: '" + Config.Default.RelayFilename + "'");
+                                }
                             }
-                            catch (Exception ex)
+                            else
                             {
-                                RMLog.Exception(ex, "Error reading relay file '" + Config.Default.RelayFilename + "' (Exception=" + ex.Message + ")");
+                                RMLog.Error("Relay file does not exist: '" + Config.Default.RelayFilename + "'");
                             }
                         }
-                        else
+                        catch (Exception ex)
                         {
-                            RMLog.Error("Relay file '" + Config.Default.RelayFilename + "' does not exist");
+                            RMLog.Exception(ex, "Error reading relay file: '" + Config.Default.RelayFilename + "'");
                         }
                     }
+                }
 
-                    if (!CanRelay)
-                    {
-                        RMLog.Warning("Rejecting request for " + Hostname + ":" + Port.ToString());
-                        _InConnection.WriteLn("Sorry, for security reasons this proxy won't connect to " + Hostname + ":" + Port.ToString());
-                        Thread.Sleep(2500);
-                        _InConnection.Close();
-                        return;
-                    }
+                if (!CanRelay)
+                {
+                    RMLog.Info("Rejecting request for " + Hostname + ":" + Port.ToString());
+                    _WebSocketConnection.WriteLn("Sorry, for security reasons this proxy won't connect to " + Hostname + ":" + Port.ToString());
+                    Thread.Sleep(2500);
+                    _WebSocketConnection.Close();
+                    return;
                 }
             }
 
             // Try to connect to the desired Host and Port
-            _InConnection.WriteLn("Connecting to " + Hostname + ":" + Port.ToString() + "...");
-            _OutConnection = new TcpConnection();
-            if (_OutConnection.Connect(Hostname, Port))
+            _WebSocketConnection.Write(Ansi.ClrScr() + "Connecting to " + Hostname + ":" + Port.ToString() + "...");
+            _TcpConnection = new TcpConnection();
+            if (_TcpConnection.Connect(Hostname, Port))
             {
                 RMLog.Info("Connected to " + Hostname + ":" + Port.ToString());
+                _WebSocketConnection.WriteLn("connected!");
 
+                // Repeatedly move data around until a connection is closed (or a stop is requested)
                 bool DoSleep = true;
-
-                while (!_Stop && _InConnection.Connected && _OutConnection.Connected)
+                while (!_Stop && _WebSocketConnection.Connected && _TcpConnection.Connected)
                 {
                     DoSleep = true;
 
-                    if (_InConnection.CanRead())
+                    if (_WebSocketConnection.CanRead())
                     {
+                        _TcpConnection.WriteBytes(_WebSocketConnection.ReadBytes());
                         DoSleep = false;
-                        _OutConnection.WriteBytes(_InConnection.ReadBytes());
                     }
 
-                    if (_OutConnection.CanRead())
+                    if (_TcpConnection.CanRead())
                     {
+                        _WebSocketConnection.WriteBytes(_TcpConnection.ReadBytes());
                         DoSleep = false;
-                        byte[] Bytes = _OutConnection.ReadBytes();
-                        string Text = Encoding.Default.GetString(Bytes);
-                        File.AppendAllText(StringUtils.PathCombine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "fTelnetProxy_Spy.log"), Text, Encoding.Default); // TODOX
-                        _InConnection.WriteBytes(Bytes);
                     }
 
                     if (DoSleep) Thread.Sleep(1);
                 }
 
+                // Check why we exited the loop
                 if (_Stop)
                 {
                     RMLog.Info("Stop requested");
+                    _WebSocketConnection.Write(Ansi.GotoXY(1, 1) + Ansi.CursorDown(255) + "\r\nProxy server shutting down...");
+                    Thread.Sleep(2500);
                 }
-                else if (!_InConnection.Connected)
+                else if (!_WebSocketConnection.Connected)
                 {
                     RMLog.Info("Client closed connection");
                 }
-                else if (!_OutConnection.Connected)
+                else if (!_TcpConnection.Connected)
                 {
                     RMLog.Info("Server closed connection");
-                }
-                else
-                {
-                    RMLog.Warning("Unknown reason for connection close");
+                    _WebSocketConnection.Write(Ansi.GotoXY(1, 1) + Ansi.CursorDown(255) + "\r\nServer closed connection...");
+                    Thread.Sleep(2500);
                 }
 
-                _OutConnection.Close();
-                _InConnection.Close();
+                // Close things down
+                _TcpConnection.Close();
+                _WebSocketConnection.Close();
             }
             else
             {
                 RMLog.Info("Unable to connect to " + Hostname + ":" + Port.ToString());
-                _InConnection.WriteLn("Sorry, I wasn't able to connect to " + Hostname + ":" + Port.ToString());
+                _WebSocketConnection.WriteLn("unable to connect!");
                 Thread.Sleep(2500);
-                _InConnection.Close();
+                _WebSocketConnection.Close();
             }
-        }
-
-        public override void Stop()
-        {
-            // Close the socket so that any waits on ReadLn(), ReadChar(), etc, will not block
-            if (_OutConnection != null) _OutConnection.Close();
-            if (_InConnection != null) _InConnection.Close();
-
-            base.Stop();
         }
     }
 }

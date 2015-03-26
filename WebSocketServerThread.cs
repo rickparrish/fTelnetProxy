@@ -1,6 +1,8 @@
 ﻿// TODO Check for code that needs to be rewritten
+// TODO Prune connections after they terminate
 using RandM.RMLib;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
@@ -11,6 +13,7 @@ namespace RandM.fTelnetProxy
     public class WebSocketServerThread : RMThread
     {
         private string _Address;
+        private List<WebSocketClientThread> ClientThreads = new List<WebSocketClientThread>();
         private int _Port;
         private TcpConnection _Server = null;
 
@@ -47,7 +50,7 @@ namespace RandM.fTelnetProxy
                                         }
                                         catch (Exception ex)
                                         {
-                                            RMLog.Exception(ex, "Unable to load PFX file '" + Config.Default.CertFilename + "'");
+                                            RMLog.Exception(ex, "Unable to load PKCS12 file '" + Config.Default.CertFilename + "'");
                                         }
                                     }
                                     if (NewConnection.Open(NewSocket))
@@ -76,6 +79,7 @@ namespace RandM.fTelnetProxy
                                             LogStream.Flush();
 
                                             WebSocketClientThread NewClient = new WebSocketClientThread(NewConnection);
+                                            ClientThreads.Add(NewClient);
                                             NewClient.Start();
                                         }
                                     }
@@ -98,6 +102,18 @@ namespace RandM.fTelnetProxy
                         {
                             RMLog.Exception(ex, "Unable to accept new websocket connection");
                         }
+                    }
+
+                    // Stop client threads
+                    foreach (var ClientThread in ClientThreads)
+                    {
+                        if (ClientThread != null) ClientThread.Stop();
+                    }
+
+                    // Wait for client threads
+                    foreach (var ClientThread in ClientThreads)
+                    {
+                        if (ClientThread != null) ClientThread.WaitFor();
                     }
                 }
             }
