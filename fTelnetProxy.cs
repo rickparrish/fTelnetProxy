@@ -1,5 +1,4 @@
-﻿// TODO Check for code that needs to be rewritten
-using RandM.RMLib;
+﻿using RandM.RMLib;
 using System;
 using System.IO;
 using System.Reflection;
@@ -27,7 +26,7 @@ namespace RandM.fTelnetProxy
                 Environment.Exit(1);
             }
 
-            RMLog.Info("fTelnetProxy Starting Up");
+            RMLog.Info("\r\n\r\nfTelnetProxy Starting Up");
 
             Config.Default.Load();
             ParseCommandLineArgs();
@@ -55,11 +54,10 @@ namespace RandM.fTelnetProxy
                 _WebSocketServer.Stop();
             }
 
-            RMLog.Info("fTelnetProxy Terminated\r\n\r\n");
+            RMLog.Info("fTelnetProxy Terminated");
 
             if (_LogStream != null)
             {
-                _LogStream.Write(Encoding.ASCII.GetBytes(Environment.NewLine), 0, Environment.NewLine.Length);
                 _LogStream.Close();
                 _LogStream.Dispose();
             }
@@ -199,37 +197,38 @@ namespace RandM.fTelnetProxy
         {
             if (Environment.UserInteractive)
             {
-                Console.WriteLine();
-                Console.WriteLine("Usage: " + Path.GetFileName(ProcessUtils.ExecutablePath) + " [parameters]");
-                Console.WriteLine();
-                Console.WriteLine("Service-mode parameters:");
-                Console.WriteLine();
-                Console.WriteLine("  /i, -i, /install, --install       Install the service");
-                Console.WriteLine();
-                Console.WriteLine("  /u, -u, /uninstall, --uninstall   Uninstall the service");
-                Console.WriteLine();
-                Console.WriteLine("  Edit the " + Config.Default.FileName + ".ini file to configure");
-                Console.WriteLine();
-                Console.WriteLine();
-                Console.WriteLine("Console-mode parameters:");
-                Console.WriteLine();
-                Console.WriteLine("  -p <port>                  Port to listen for connections on");
-                Console.WriteLine("  --port <port>              Default is 1123");
-                Console.WriteLine();
-                Console.WriteLine("  -t <host:port>             Telnet server to redirect to");
-                Console.WriteLine("  --target <host:port>       Default is localhost:23");
-                Console.WriteLine();
-                Console.WriteLine("  -c <filename>              PKCS12 file containing private key and cert chain");
-                Console.WriteLine("  --cert <filename>          Needed if your site uses https://");
-                Console.WriteLine();
-                Console.WriteLine("  -pw <password>             Password to open the PKCS12 file");
-                Console.WriteLine("  --password <password>      Needed if your PKCS12 file is password protected");
-                Console.WriteLine();
-                Console.WriteLine("  -l <level>                 Log level (Trace, Debug, Info, Warning, Error)");
-                Console.WriteLine("  --loglevel <level>         Default is Info");
-                Console.WriteLine();
-                Console.WriteLine("  -?, -h, --help             Display this screen");
-                Console.WriteLine();
+                //Console.WriteLine("345678901234567890123456789012345678901234567890123456789012345678901234567890");
+                Console.WriteLine();                                                                               //
+                Console.WriteLine("Usage: " + Path.GetFileName(ProcessUtils.ExecutablePath) + " [parameters]");    //
+                Console.WriteLine();                                                                               //
+                Console.WriteLine("Service-mode parameters:");                                                     //
+                Console.WriteLine();                                                                               //
+                Console.WriteLine("  /i, -i, /install, --install       Install the service");                      //
+                Console.WriteLine();                                                                               //
+                Console.WriteLine("  /u, -u, /uninstall, --uninstall   Uninstall the service");                    //
+                Console.WriteLine();                                                                               //
+                Console.WriteLine("  Edit the " + Config.Default.FileName + " file to configure");                 //
+                Console.WriteLine();                                                                               //
+                Console.WriteLine();                                                                               //
+                Console.WriteLine("Console-mode parameters:");                                                     //
+                Console.WriteLine();                                                                               //
+                Console.WriteLine("  -p <port>                  Port to listen for connections on");               //
+                Console.WriteLine("  --port <port>              Default is 1123");                                 //
+                Console.WriteLine();                                                                               //
+                Console.WriteLine("  -t <host:port>             Telnet server to redirect to");                    //
+                Console.WriteLine("  --target <host:port>       Default is localhost:23");                         //
+                Console.WriteLine();                                                                               //
+                Console.WriteLine("  -c <filename>              PKCS12 file containing private key + cert chain"); //
+                Console.WriteLine("  --cert <filename>          Needed if your site uses https://");               //
+                Console.WriteLine();                                                                               //
+                Console.WriteLine("  -pw <password>             Password to open the PKCS12 file");                //
+                Console.WriteLine("  --password <password>      Needed if your PKCS12 file is password protected");//
+                Console.WriteLine();                                                                               //
+                Console.WriteLine("  -l <level>                 Log level (Trace, Debug, Info, Warning, Error)");  //
+                Console.WriteLine("  --loglevel <level>         Default is Info");                                 //
+                Console.WriteLine();                                                                               //
+                Console.WriteLine("  -?, -h, --help             Display this screen");                             //
+                Console.WriteLine();                                                                               //
                 //Console.WriteLine("345678901234567890123456789012345678901234567890123456789012345678901234567890");
                 Environment.Exit(1);
             }
