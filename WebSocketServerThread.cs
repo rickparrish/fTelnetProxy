@@ -1,6 +1,4 @@
-﻿// TODO Check for code that needs to be rewritten
-// TODO Prune connections after they terminate
-using RandM.RMLib;
+﻿using RandM.RMLib;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -23,6 +21,14 @@ namespace RandM.fTelnetProxy
             _Port = port;
         }
 
+        void ClientThread_FinishEvent(object sender, EventArgs e)
+        {
+            if ((sender is WebSocketClientThread) && ClientThreads.Contains((WebSocketClientThread)sender))
+            {
+                ClientThreads.Remove((WebSocketClientThread)sender);
+            }
+        }
+
         protected override void Execute()
         {
             _Server = new WebSocketConnection();
@@ -40,23 +46,12 @@ namespace RandM.fTelnetProxy
                                 Socket NewSocket = _Server.Accept();
                                 if (NewSocket != null)
                                 {
-                                    // TODO Need to pass in accepted protocols and retrieve requested server and ignore /ping
-                                    WebSocketConnection NewConnection = new WebSocketConnection(true);
-                                    if (Config.Default.CertFilename != "")
-                                    {
-                                        try
-                                        {
-                                            NewConnection.Certificate = new X509Certificate2(Config.Default.CertFilename, Config.Default.CertPassword);
-                                        }
-                                        catch (Exception ex)
-                                        {
-                                            RMLog.Exception(ex, "Unable to load PKCS12 file '" + Config.Default.CertFilename + "'");
-                                        }
-                                    }
+                                    WebSocketConnection NewConnection = new WebSocketConnection(true, Config.Default.Certificate);
                                     if (NewConnection.Open(NewSocket))
                                     {
                                         if (NewConnection.Header["Path"] == "/ping")
                                         {
+                                            // Handle ping requests (from proxy.ftelnet.ca most likely)
                                             string Ping = NewConnection.ReadLn(1000);
                                             if (NewConnection.ReadTimedOut)
                                             {
@@ -71,6 +66,7 @@ namespace RandM.fTelnetProxy
                                         }
                                         else
                                         {
+                                            // Handle normal connection
                                             RMLog.Info("Connection accepted from " + NewConnection.GetRemoteIP() + ":" + NewConnection.GetRemotePort());
 
                                             string MessageText = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\r\n", "TODO scheme", NewConnection.GetRemoteIP(), NewConnection.GetRemotePort(), "TODO clientConnection.ConnectionInfo.Path", "TODO clientConnection.ConnectionInfo.NegotiatedSubProtocol");
@@ -78,10 +74,10 @@ namespace RandM.fTelnetProxy
                                             LogStream.Write(MessageBytes, 0, MessageBytes.Length);
                                             LogStream.Flush();
 
-                                            WebSocketClientThread NewClient = new WebSocketClientThread(NewConnection);
-                                            NewClient.FinishEvent += NewClient_FinishEvent;
-                                            ClientThreads.Add(NewClient);
-                                            NewClient.Start();
+                                            WebSocketClientThread ClientThread = new WebSocketClientThread(NewConnection);
+                                            ClientThread.FinishEvent += ClientThread_FinishEvent;
+                                            ClientThreads.Add(ClientThread);
+                                            ClientThread.Start();
                                         }
                                     }
                                     else
@@ -122,11 +118,6 @@ namespace RandM.fTelnetProxy
             {
                 RMLog.Error("WebSocket Server Thread: Unable to listen on " + _Address + ":" + _Port);
             }
-        }
-
-        void NewClient_FinishEvent(object sender, EventArgs e)
-        {
-            ClientThreads.Remove((WebSocketClientThread)sender);
         }
 
         public override void Stop()

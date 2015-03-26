@@ -1,30 +1,42 @@
 ﻿using RandM.RMLib;
+using System;
 using System.IO;
+using System.Security.Cryptography.X509Certificates;
 
 namespace RandM.fTelnetProxy
 {
     public class Config : ConfigHelper
     {
-        public string CertFilename { get; set; }
-        public string CertPassword { get; set; }
+        public string CertificateFilename { get; set; }
+        public string CertificatePassword { get; set; }
         public int ListenPort { get; set; }
         public LogLevel LogLevel { get; set; }
         public string RelayFilename { get; set; }
         public string TargetHostname { get; set; }
         public int TargetPort { get; set; }
 
+        private X509Certificate2 _Certificate = null;
+
         static public Config Default = new Config();
 
         public Config()
             : base(ConfigSaveLocation.Relative)
         {
-            CertFilename = "";
-            CertPassword = "";
+            CertificateFilename = "";
+            CertificatePassword = "";
             ListenPort = 1123;
             LogLevel = LogLevel.Info;
             RelayFilename = "";
             TargetHostname = "localhost";
             TargetPort = 23;
+        }
+
+        public X509Certificate2 Certificate
+        {
+            get
+            {
+                return _Certificate;
+            }
         }
 
         public new void Load()
@@ -39,12 +51,12 @@ namespace RandM.fTelnetProxy
             RMLog.Info("-Listen port...." + ListenPort.ToString());
             RMLog.Info("-Target server.." + TargetHostname + ":" + TargetPort.ToString());
             RMLog.Info("-Log level......" + LogLevel.ToString());
-            if (CertFilename != "")
+            if (CertificateFilename != "")
             {
-                if (File.Exists(CertFilename))
+                if (File.Exists(CertificateFilename))
                 {
-                    RMLog.Info("-Cert file......" + CertFilename);
-                    if (CertPassword == "")
+                    RMLog.Info("-Cert file......" + CertificateFilename);
+                    if (CertificatePassword == "")
                     {
                         RMLog.Info("-Cert password..none");
                     }
@@ -52,11 +64,20 @@ namespace RandM.fTelnetProxy
                     {
                         RMLog.Info("-Cert password..yes (hidden)");
                     }
+
+                    try
+                    {
+                        _Certificate = new X509Certificate2(CertificateFilename, CertificatePassword);
+                    }
+                    catch (Exception ex)
+                    {
+                        RMLog.Exception(ex, "--Error loading cert file");
+                    }
                 }
                 else
                 {
-                    RMLog.Error("-Cert file not found: '" + CertFilename + "'");
-                    CertFilename = "";
+                    RMLog.Error("-Cert file not found: '" + CertificateFilename + "'");
+                    CertificateFilename = "";
                 }
 
             }

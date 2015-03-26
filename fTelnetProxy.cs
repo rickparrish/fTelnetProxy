@@ -34,8 +34,8 @@ namespace RandM.fTelnetProxy
                             i += 1;
                             if (File.Exists(Args[i]))
                             {
-                                Config.Default.CertFilename = Args[i];
-                                RMLog.Info("-Cert file......" + Config.Default.CertFilename);
+                                Config.Default.CertificateFilename = Args[i];
+                                RMLog.Info("-Cert file......" + Config.Default.CertificateFilename);
                             }
                             else
                             {
@@ -80,7 +80,7 @@ namespace RandM.fTelnetProxy
                         case "pw":
                         case "password":
                             i += 1;
-                            Config.Default.CertPassword = Args[i];
+                            Config.Default.CertificatePassword = Args[i];
                             RMLog.Info("-Cert password..yes (hidden)");
                             break;
 
