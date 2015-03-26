@@ -32,9 +32,9 @@ namespace RandM.fTelnetProxy
             Config.Default.Load();
             ParseCommandLineArgs();
 
-            RMLog.Info("Starting WebSocket Proxy Thread");
             try
             {
+                RMLog.Info("Starting WebSocket Proxy Thread");
                 _WebSocketServer = new WebSocketServerThread("0.0.0.0", Config.Default.ListenPort);
                 _WebSocketServer.Start();
             }
@@ -75,7 +75,6 @@ namespace RandM.fTelnetProxy
                 for (int i = 1; i < Args.Length; i++)
                 {
                     // TODO This is cumbersome
-                    // TODO Handle file not found errors here
                     switch (Args[i])
                     {
                         case "/c":
@@ -83,8 +82,15 @@ namespace RandM.fTelnetProxy
                         case "/cert":
                         case "--cert":
                             i += 1;
-                            Config.Default.CertFilename = Args[i];
-                            RMLog.Info("-Cert file......" + Config.Default.CertFilename);
+                            if (File.Exists(Args[i]))
+                            {
+                                Config.Default.CertFilename = Args[i];
+                                RMLog.Info("-Cert file......" + Config.Default.CertFilename);
+                            }
+                            else
+                            {
+                                RMLog.Error("-Cert file not found: '" + Args[i] + "'");
+                            }
                             break;
 
                         case "/?":
@@ -142,8 +148,15 @@ namespace RandM.fTelnetProxy
                         case "/relay":
                         case "--relay":
                             i += 1;
-                            Config.Default.RelayFilename = Args[i];
-                            RMLog.Info("-Relay file....." + Config.Default.RelayFilename);
+                            if (File.Exists(Args[i]))
+                            {
+                                Config.Default.RelayFilename = Args[i];
+                                RMLog.Info("-Relay file....." + Config.Default.RelayFilename);
+                            }
+                            else
+                            {
+                                RMLog.Error("-Relay file not found: '" + Args[i] + "'");
+                            }
                             break;
 
                         case "/t":

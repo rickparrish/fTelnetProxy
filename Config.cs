@@ -1,6 +1,7 @@
 ﻿using RandM.RMLib;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 
 namespace RandM.fTelnetProxy
@@ -43,19 +44,36 @@ namespace RandM.fTelnetProxy
             RMLog.Info("-Log level......" + LogLevel.ToString());
             if (CertFilename != "")
             {
-                RMLog.Info("-Cert file......" + CertFilename);
-                if (CertPassword == "")
+                if (File.Exists(CertFilename))
                 {
-                    RMLog.Info("-Cert password..none");
+                    RMLog.Info("-Cert file......" + CertFilename);
+                    if (CertPassword == "")
+                    {
+                        RMLog.Info("-Cert password..none");
+                    }
+                    else
+                    {
+                        RMLog.Info("-Cert password..yes (hidden)");
+                    }
                 }
                 else
                 {
-                    RMLog.Info("-Cert password..yes (hidden)");
+                    RMLog.Error("-Cert file not found: '" + CertFilename + "'");
+                    CertFilename = "";
                 }
+
             }
             if (RelayFilename != "")
             {
-                RMLog.Info("-Relay file....." + RelayFilename);
+                if (File.Exists(RelayFilename))
+                {
+                    RMLog.Info("-Relay file....." + RelayFilename);
+                }
+                else
+                {
+                    RMLog.Error("-Relay file not found: '" + RelayFilename + "'");
+                    RelayFilename = "";
+                }
             }
         }
     }
