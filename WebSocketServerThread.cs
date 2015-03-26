@@ -33,52 +33,59 @@ namespace RandM.fTelnetProxy
                 {
                     while (!_Stop)
                     {
-                        // Accept an incoming connection
-                        if (_Server.CanAccept(500)) // 1/2 of a second
+                        try
                         {
-                            Socket NewSocket = _Server.Accept();
-                            if (NewSocket != null)
+                            // Accept an incoming connection
+                            if (_Server.CanAccept(500)) // 1/2 of a second
                             {
-                                // TODO Need to pass in accepted protocols and retrieve requested server and ignore /ping
-                                WebSocketConnection NewConnection = new WebSocketConnection(true);
-                                if (Config.Default.CertFilename != "")
+                                Socket NewSocket = _Server.Accept();
+                                if (NewSocket != null)
                                 {
-                                    if (File.Exists(Config.Default.CertFilename))
+                                    // TODO Need to pass in accepted protocols and retrieve requested server and ignore /ping
+                                    WebSocketConnection NewConnection = new WebSocketConnection(true);
+                                    if (Config.Default.CertFilename != "")
                                     {
-                                        NewConnection.Certificate = new X509Certificate2(Config.Default.CertFilename, Config.Default.CertPassword);
+                                        try
+                                        {
+                                            NewConnection.Certificate = new X509Certificate2(Config.Default.CertFilename, Config.Default.CertPassword);
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            RaiseErrorMessageEvent("Unable to load PFX file: " + ex.ToString());
+                                        }
                                     }
-                                    else
+                                    if (NewConnection.Open(NewSocket))
                                     {
-                                        RaiseErrorMessageEvent("Cert file '" + Config.Default.CertFilename + "' not found");
-                                    }
-                                }
-                                if (NewConnection.Open(NewSocket))
-                                {
-                                    RaiseMessageEvent("Connection accepted from " + NewConnection.GetRemoteIP() + ":" + NewConnection.GetRemotePort());
-                                    
-                                    string MessageText = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\r\n", "TODO scheme", NewConnection.GetRemoteIP(), NewConnection.GetRemotePort(), "TODO clientConnection.ConnectionInfo.Path", "TODO clientConnection.ConnectionInfo.NegotiatedSubProtocol");
-                                    byte[] MessageBytes = Encoding.ASCII.GetBytes(MessageText);
-                                    LogStream.Write(MessageBytes, 0, MessageBytes.Length);
-                                    LogStream.Flush();
+                                        RaiseMessageEvent("Connection accepted from " + NewConnection.GetRemoteIP() + ":" + NewConnection.GetRemotePort());
 
-                                    WebSocketClientThread NewClient = new WebSocketClientThread(NewConnection);
-                                    NewClient.ErrorMessageEvent += new EventHandler<StringEventArgs>(ProxyClient_ErrorMessageEvent);
-                                    NewClient.MessageEvent += new EventHandler<StringEventArgs>(ProxyClient_MessageEvent);
-                                    NewClient.Start();
-                                }
-                                else
-                                {
-                                    if (NewConnection.FlashPolicyFileRequest)
-                                    {
-                                        RaiseMessageEvent("Answered flash policy file request from " + NewConnection.GetRemoteIP() + ":" + NewConnection.GetRemotePort().ToString());
+                                        string MessageText = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\r\n", "TODO scheme", NewConnection.GetRemoteIP(), NewConnection.GetRemotePort(), "TODO clientConnection.ConnectionInfo.Path", "TODO clientConnection.ConnectionInfo.NegotiatedSubProtocol");
+                                        byte[] MessageBytes = Encoding.ASCII.GetBytes(MessageText);
+                                        LogStream.Write(MessageBytes, 0, MessageBytes.Length);
+                                        LogStream.Flush();
+
+                                        WebSocketClientThread NewClient = new WebSocketClientThread(NewConnection);
+                                        NewClient.ErrorMessageEvent += new EventHandler<StringEventArgs>(ProxyClient_ErrorMessageEvent);
+                                        NewClient.MessageEvent += new EventHandler<StringEventArgs>(ProxyClient_MessageEvent);
+                                        NewClient.Start();
                                     }
                                     else
                                     {
-                                        RaiseErrorMessageEvent("Invalid WebSocket connection from " + NewConnection.GetRemoteIP() + ":" + NewConnection.GetRemotePort().ToString());
+                                        if (NewConnection.FlashPolicyFileRequest)
+                                        {
+                                            RaiseMessageEvent("Answered flash policy file request from " + NewConnection.GetRemoteIP() + ":" + NewConnection.GetRemotePort().ToString());
+                                        }
+                                        else
+                                        {
+                                            RaiseErrorMessageEvent("Invalid WebSocket connection from " + NewConnection.GetRemoteIP() + ":" + NewConnection.GetRemotePort().ToString());
+                                        }
+                                        NewConnection.Close();
                                     }
-                                    NewConnection.Close();
                                 }
                             }
+                        }
+                        catch (Exception ex)
+                        {
+                            RaiseErrorMessageEvent("Unable to accept new websocket connection: " + ex.ToString());
                         }
                     }
                 }

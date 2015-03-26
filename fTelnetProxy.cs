@@ -16,6 +16,7 @@ namespace RandM.fTelnetProxy
         public fTelnetProxy()
         {
             _LogStream = new FileStream(Path.Combine(ProcessUtils.StartupPath, "fTelnetProxy.log"), FileMode.Append, FileAccess.Write, FileShare.Read);
+            RMLog.Handler += RMLog_Handler;
 
             if (Config.Default.Loaded | ParseCommandLineArgs())
             {
@@ -60,6 +61,20 @@ namespace RandM.fTelnetProxy
             }
         }
 
+        void RMLog_Handler(object sender, RMLogEventArgs e)
+        {
+            if (e.Level >= LogLevel.Warning)
+            {
+                // Treat as an error message
+                ErrorMessageEvent(sender, new StringEventArgs("[" + e.Level.ToString() + "] " + e.Message));
+            }
+            else
+            {
+                // Treat as a normal message
+                MessageEvent(sender, new StringEventArgs("[" + e.Level.ToString() + "] " + e.Message));
+            }
+        }
+
         private void ErrorMessageEvent(object sender, StringEventArgs mea)
         {
             MessageEvent(sender, new StringEventArgs("ERROR: " + mea.Text));
@@ -101,6 +116,22 @@ namespace RandM.fTelnetProxy
                     case "--help":
                         ShowHelp();
                         return false;
+
+                    case "-l":
+                    case "--loglevel":
+                        i += 1;
+                        try
+                        {
+                            RMLog.Level = (LogLevel)Enum.Parse(typeof(LogLevel), Args[i]);
+                        }
+                        catch (Exception)
+                        {
+                            Console.WriteLine();
+                            Console.WriteLine("Invalid loglevel '" + Args[i] + "'");
+                            Console.WriteLine();
+                            return false;
+                        }
+                        break;
 
                     case "-p":
                     case "--port":
@@ -192,7 +223,7 @@ namespace RandM.fTelnetProxy
                 Console.WriteLine("  -pw <password>             Password to use to open the PKCS12 file");
                 Console.WriteLine("  --password <password>      Only needed if PKCS12 file is password protected");
                 Console.WriteLine();
-                Console.WriteLine("  -l <level>                 Set log level (Debug, Info, Warn, Error)");
+                Console.WriteLine("  -l <level>                 Set log level (Trace, Debug, Info, Warning, Error)");
                 Console.WriteLine("  --loglevel <level>         Default is Info");
                 Console.WriteLine();
                 Console.WriteLine("  -?, -h, --help             Display this screen");
