@@ -10,8 +10,6 @@ namespace RandM.fTelnetProxy
     public class WebSocketClientThread : RMThread
     {
         public event EventHandler CloseEvent = null;
-        public event EventHandler<StringEventArgs> ErrorMessageEvent = null;
-        public event EventHandler<StringEventArgs> MessageEvent = null;
 
         private WebSocketConnection _InConnection = null;
         private TcpConnection _OutConnection = null;
@@ -74,18 +72,18 @@ namespace RandM.fTelnetProxy
                             }
                             catch (Exception ex)
                             {
-                                RaiseErrorMessageEvent("Error reading relay file '" + Config.Default.RelayFilename + "' (Exception=" + ex.Message + ")");
+                                RMLog.Exception(ex, "Error reading relay file '" + Config.Default.RelayFilename + "' (Exception=" + ex.Message + ")");
                             }
                         }
                         else
                         {
-                            RaiseErrorMessageEvent("Relay file '" + Config.Default.RelayFilename + "' does not exist");
+                            RMLog.Error("Relay file '" + Config.Default.RelayFilename + "' does not exist");
                         }
                     }
 
                     if (!CanRelay)
                     {
-                        RaiseMessageEvent("Rejecting request for " + Hostname + ":" + Port.ToString());
+                        RMLog.Warning("Rejecting request for " + Hostname + ":" + Port.ToString());
                         _InConnection.WriteLn("Sorry, for security reasons this proxy won't connect to " + Hostname + ":" + Port.ToString());
                         Thread.Sleep(2500);
                         _InConnection.Close();
@@ -99,7 +97,7 @@ namespace RandM.fTelnetProxy
             _OutConnection = new TcpConnection();
             if (_OutConnection.Connect(Hostname, Port))
             {
-                RaiseMessageEvent("Connected to " + Hostname + ":" + Port.ToString());
+                RMLog.Info("Connected to " + Hostname + ":" + Port.ToString());
 
                 bool DoSleep = true;
 
@@ -125,36 +123,33 @@ namespace RandM.fTelnetProxy
                     if (DoSleep) Thread.Sleep(1);
                 }
 
+                if (_Stop)
+                {
+                    RMLog.Info("Stop requested");
+                }
+                else if (!_InConnection.Connected)
+                {
+                    RMLog.Info("Client closed connection");
+                }
+                else if (!_OutConnection.Connected)
+                {
+                    RMLog.Info("Server closed connection");
+                }
+                else
+                {
+                    RMLog.Warning("Unknown reason for connection close");
+                }
+
                 _OutConnection.Close();
                 _InConnection.Close();
-
-                RaiseCloseEvent();
             }
             else
             {
-                RaiseErrorMessageEvent("Unable to connect to " + Hostname + ":" + Port.ToString());
+                RMLog.Info("Unable to connect to " + Hostname + ":" + Port.ToString());
                 _InConnection.WriteLn("Sorry, I wasn't able to connect to " + Hostname + ":" + Port.ToString());
                 Thread.Sleep(2500);
                 _InConnection.Close();
             }
-        }
-
-        private void RaiseCloseEvent()
-        {
-            EventHandler Handler = CloseEvent;
-            if (Handler != null) Handler(this, EventArgs.Empty);
-        }
-
-        private void RaiseErrorMessageEvent(string AMessage)
-        {
-            EventHandler<StringEventArgs> Handler = ErrorMessageEvent;
-            if (Handler != null) Handler(this, new StringEventArgs("[" + _InConnection.GetRemoteIP() + ":" + _InConnection.GetRemotePort().ToString() + "] " + AMessage));
-        }
-
-        private void RaiseMessageEvent(string AMessage)
-        {
-            EventHandler<StringEventArgs> Handler = MessageEvent;
-            if (Handler != null) Handler(this, new StringEventArgs("[" + _InConnection.GetRemoteIP() + ":" + _InConnection.GetRemotePort().ToString() + "] " + AMessage));
         }
 
         public override void Stop()

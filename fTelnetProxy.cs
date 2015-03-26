@@ -20,18 +20,16 @@ namespace RandM.fTelnetProxy
 
             if (Config.Default.Loaded | ParseCommandLineArgs())
             {
-                MessageEvent(null, new StringEventArgs("fTelnetProxy Starting Up"));
-                MessageEvent(null, new StringEventArgs("Starting WebSocket Proxy Thread"));
+                RMLog.Info("fTelnetProxy Starting Up");
+                RMLog.Info("Starting WebSocket Proxy Thread");
                 try
                 {
                     _WebSocketServer = new WebSocketServerThread("0.0.0.0", Config.Default.ListenPort); // TODO wss://
-                    _WebSocketServer.ErrorMessageEvent += ErrorMessageEvent;
-                    _WebSocketServer.MessageEvent += MessageEvent;
                     _WebSocketServer.Start();
                 }
                 catch (Exception ex)
                 {
-                    ErrorMessageEvent(null, new StringEventArgs("Failed to start WebSocket Proxy Thread: " + ex.Message));
+                    RMLog.Exception(ex, "Failed to start WebSocket Proxy Thread");
                     _WebSocketServer = null;
                 }
             }
@@ -43,58 +41,21 @@ namespace RandM.fTelnetProxy
 
         public void Dispose()
         {
-            MessageEvent(null, new StringEventArgs("fTelnetProxy Shutting Down"));
+            RMLog.Info("fTelnetProxy Shutting Down");
 
             if (_WebSocketServer != null)
             {
-                MessageEvent(null, new StringEventArgs("Stopping WebSocket Proxy Thread"));
+                RMLog.Info("Stopping WebSocket Proxy Thread");
                 _WebSocketServer.Stop();
             }
 
-            MessageEvent(null, new StringEventArgs("fTelnetProxy Terminated" + Environment.NewLine + Environment.NewLine));
+            RMLog.Info("fTelnetProxy Terminated\r\n\r\n");
 
             if (_LogStream != null)
             {
                 _LogStream.Write(Encoding.ASCII.GetBytes(Environment.NewLine), 0, Environment.NewLine.Length);
                 _LogStream.Close();
                 _LogStream.Dispose();
-            }
-        }
-
-        void RMLog_Handler(object sender, RMLogEventArgs e)
-        {
-            if (e.Level >= LogLevel.Warning)
-            {
-                // Treat as an error message
-                ErrorMessageEvent(sender, new StringEventArgs("[" + e.Level.ToString() + "] " + e.Message));
-            }
-            else
-            {
-                // Treat as a normal message
-                MessageEvent(sender, new StringEventArgs("[" + e.Level.ToString() + "] " + e.Message));
-            }
-        }
-
-        private void ErrorMessageEvent(object sender, StringEventArgs mea)
-        {
-            MessageEvent(sender, new StringEventArgs("ERROR: " + mea.Text));
-        }
-
-        private bool LoadConfigFile()
-        {
-            // TODO
-            return false;
-        }
-
-        private void MessageEvent(object sender, StringEventArgs mea)
-        {
-            lock (_LogStreamLock)
-            {
-                byte[] MessageBytes = Encoding.ASCII.GetBytes("[" + DateTime.Now.ToString() + "] " + mea.Text + Environment.NewLine);
-                _LogStream.Write(MessageBytes, 0, MessageBytes.Length);
-                _LogStream.Flush();
-
-                if (Environment.UserInteractive) Console.Write(Encoding.ASCII.GetString(MessageBytes));
             }
         }
 
@@ -197,6 +158,20 @@ namespace RandM.fTelnetProxy
             }
 
             return true;
+        }
+
+        void RMLog_Handler(object sender, RMLogEventArgs e)
+        {
+            string Message = string.Format("[{0}] [{1}] {2}\r\n",
+                DateTime.Now.ToString(),
+                e.Level.ToString(),
+                e.Message);
+
+            byte[] MessageBytes = Encoding.ASCII.GetBytes(Message);
+            _LogStream.Write(MessageBytes, 0, MessageBytes.Length);
+            _LogStream.Flush();
+
+            if (Environment.UserInteractive) Console.Write(Encoding.ASCII.GetString(MessageBytes));
         }
 
         private void ShowHelp()

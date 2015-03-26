@@ -11,9 +11,6 @@ namespace RandM.fTelnetProxy
 {
     public class WebSocketServerThread : RMThread
     {
-        public event EventHandler<StringEventArgs> ErrorMessageEvent = null;
-        public event EventHandler<StringEventArgs> MessageEvent = null;
-
         private string _Address;
         private int _Port;
         private TcpConnection _Server = null;
@@ -51,12 +48,12 @@ namespace RandM.fTelnetProxy
                                         }
                                         catch (Exception ex)
                                         {
-                                            RaiseErrorMessageEvent("Unable to load PFX file: " + ex.ToString());
+                                            RMLog.Exception(ex, "Unable to load PFX file '" + Config.Default.CertFilename + "'");
                                         }
                                     }
                                     if (NewConnection.Open(NewSocket))
                                     {
-                                        RaiseMessageEvent("Connection accepted from " + NewConnection.GetRemoteIP() + ":" + NewConnection.GetRemotePort());
+                                        RMLog.Info("Connection accepted from " + NewConnection.GetRemoteIP() + ":" + NewConnection.GetRemotePort());
 
                                         string MessageText = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\r\n", "TODO scheme", NewConnection.GetRemoteIP(), NewConnection.GetRemotePort(), "TODO clientConnection.ConnectionInfo.Path", "TODO clientConnection.ConnectionInfo.NegotiatedSubProtocol");
                                         byte[] MessageBytes = Encoding.ASCII.GetBytes(MessageText);
@@ -64,19 +61,17 @@ namespace RandM.fTelnetProxy
                                         LogStream.Flush();
 
                                         WebSocketClientThread NewClient = new WebSocketClientThread(NewConnection);
-                                        NewClient.ErrorMessageEvent += new EventHandler<StringEventArgs>(ProxyClient_ErrorMessageEvent);
-                                        NewClient.MessageEvent += new EventHandler<StringEventArgs>(ProxyClient_MessageEvent);
                                         NewClient.Start();
                                     }
                                     else
                                     {
                                         if (NewConnection.FlashPolicyFileRequest)
                                         {
-                                            RaiseMessageEvent("Answered flash policy file request from " + NewConnection.GetRemoteIP() + ":" + NewConnection.GetRemotePort().ToString());
+                                            RMLog.Info("Answered flash policy file request from " + NewConnection.GetRemoteIP() + ":" + NewConnection.GetRemotePort().ToString());
                                         }
                                         else
                                         {
-                                            RaiseErrorMessageEvent("Invalid WebSocket connection from " + NewConnection.GetRemoteIP() + ":" + NewConnection.GetRemotePort().ToString());
+                                            RMLog.Warning("Invalid WebSocket connection from " + NewConnection.GetRemoteIP() + ":" + NewConnection.GetRemotePort().ToString());
                                         }
                                         NewConnection.Close();
                                     }
@@ -85,37 +80,15 @@ namespace RandM.fTelnetProxy
                         }
                         catch (Exception ex)
                         {
-                            RaiseErrorMessageEvent("Unable to accept new websocket connection: " + ex.ToString());
+                            RMLog.Exception(ex, "Unable to accept new websocket connection");
                         }
                     }
                 }
             }
             else
             {
-                RaiseErrorMessageEvent("WebSocket Server Thread: Unable to listen on " + _Address + ":" + _Port);
+                RMLog.Error("WebSocket Server Thread: Unable to listen on " + _Address + ":" + _Port);
             }
-        }
-
-        void ProxyClient_ErrorMessageEvent(object sender, StringEventArgs mea)
-        {
-            RaiseErrorMessageEvent(mea.Text);
-        }
-
-        void ProxyClient_MessageEvent(object sender, StringEventArgs mea)
-        {
-            RaiseMessageEvent(mea.Text);
-        }
-
-        private void RaiseErrorMessageEvent(string AMessage)
-        {
-            EventHandler<StringEventArgs> Handler = ErrorMessageEvent;
-            if (Handler != null) Handler(this, new StringEventArgs("[" + _Address + ":" + _Port.ToString() + "] " + AMessage));
-        }
-
-        private void RaiseMessageEvent(string AMessage)
-        {
-            EventHandler<StringEventArgs> Handler = MessageEvent;
-            if (Handler != null) Handler(this, new StringEventArgs("[" + _Address + ":" + _Port.ToString() + "] " + AMessage));
         }
 
         public override void Stop()
