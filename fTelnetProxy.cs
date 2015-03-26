@@ -32,6 +32,13 @@ namespace RandM.fTelnetProxy
                         case "c":
                         case "cert":
                             i += 1;
+
+                            // If file doesn't exist, and it's relative, convert to absolute
+                            if (!File.Exists(Args[i]) && !Path.IsPathRooted(Args[i]))
+                            {
+                                Args[i] = StringUtils.PathCombine(ProcessUtils.StartupPath, Args[i]);
+                            }
+                            
                             if (File.Exists(Args[i]))
                             {
                                 Config.Default.CertificateFilename = Args[i];
@@ -87,6 +94,13 @@ namespace RandM.fTelnetProxy
                         case "r":
                         case "relay":
                             i += 1;
+
+                            // If file doesn't exist, and it's relative, convert to absolute
+                            if (!File.Exists(Args[i]) && !Path.IsPathRooted(Args[i]))
+                            {
+                                Args[i] = StringUtils.PathCombine(ProcessUtils.StartupPath, Args[i]);
+                            }
+
                             if (File.Exists(Args[i]))
                             {
                                 Config.Default.RelayFilename = Args[i];

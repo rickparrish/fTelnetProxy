@@ -53,6 +53,12 @@ namespace RandM.fTelnetProxy
             RMLog.Info("-Log level......" + LogLevel.ToString());
             if (CertificateFilename != "")
             {
+                // If file doesn't exist, and it's relative, convert to absolute
+                if (!File.Exists(CertificateFilename) && !Path.IsPathRooted(CertificateFilename))
+                {
+                    CertificateFilename = StringUtils.PathCombine(ProcessUtils.StartupPath, CertificateFilename);
+                }
+
                 if (File.Exists(CertificateFilename))
                 {
                     RMLog.Info("-Cert file......" + CertificateFilename);
@@ -83,6 +89,12 @@ namespace RandM.fTelnetProxy
             }
             if (RelayFilename != "")
             {
+                // If file doesn't exist, and it's relative, convert to absolute
+                if (!File.Exists(RelayFilename) && !Path.IsPathRooted(RelayFilename))
+                {
+                    RelayFilename = StringUtils.PathCombine(ProcessUtils.StartupPath, RelayFilename);
+                }
+
                 if (File.Exists(RelayFilename))
                 {
                     RMLog.Info("-Relay file....." + RelayFilename);
