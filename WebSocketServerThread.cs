@@ -53,15 +53,32 @@ namespace RandM.fTelnetProxy
                                     }
                                     if (NewConnection.Open(NewSocket))
                                     {
-                                        RMLog.Info("Connection accepted from " + NewConnection.GetRemoteIP() + ":" + NewConnection.GetRemotePort());
+                                        if (NewConnection.Header["Path"] == "/ping")
+                                        {
+                                            string Ping = NewConnection.ReadLn(1000);
+                                            if (NewConnection.ReadTimedOut)
+                                            {
+                                                RMLog.Debug("Answering a /ping (no time received) from " + NewConnection.GetRemoteIP() + ":" + NewConnection.GetRemotePort());
+                                            }
+                                            else
+                                            {
+                                                RMLog.Debug("Answering a /ping (" + Ping + ") from " + NewConnection.GetRemoteIP() + ":" + NewConnection.GetRemotePort());
+                                                NewConnection.Write(Ping);
+                                            }
+                                            NewConnection.Close();
+                                        }
+                                        else
+                                        {
+                                            RMLog.Info("Connection accepted from " + NewConnection.GetRemoteIP() + ":" + NewConnection.GetRemotePort());
 
-                                        string MessageText = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\r\n", "TODO scheme", NewConnection.GetRemoteIP(), NewConnection.GetRemotePort(), "TODO clientConnection.ConnectionInfo.Path", "TODO clientConnection.ConnectionInfo.NegotiatedSubProtocol");
-                                        byte[] MessageBytes = Encoding.ASCII.GetBytes(MessageText);
-                                        LogStream.Write(MessageBytes, 0, MessageBytes.Length);
-                                        LogStream.Flush();
+                                            string MessageText = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\r\n", "TODO scheme", NewConnection.GetRemoteIP(), NewConnection.GetRemotePort(), "TODO clientConnection.ConnectionInfo.Path", "TODO clientConnection.ConnectionInfo.NegotiatedSubProtocol");
+                                            byte[] MessageBytes = Encoding.ASCII.GetBytes(MessageText);
+                                            LogStream.Write(MessageBytes, 0, MessageBytes.Length);
+                                            LogStream.Flush();
 
-                                        WebSocketClientThread NewClient = new WebSocketClientThread(NewConnection);
-                                        NewClient.Start();
+                                            WebSocketClientThread NewClient = new WebSocketClientThread(NewConnection);
+                                            NewClient.Start();
+                                        }
                                     }
                                     else
                                     {
