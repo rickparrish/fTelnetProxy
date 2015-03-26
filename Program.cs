@@ -1,10 +1,7 @@
-﻿// TODO Check for code that needs to be rewritten
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.Configuration.Install;
 using System.Reflection;
 using System.ServiceProcess;
-using System.Text;
 
 namespace RandM.fTelnetProxy
 {
@@ -15,14 +12,17 @@ namespace RandM.fTelnetProxy
         /// </summary>
         static void Main(string[] args)
         {
+            // Check for service mode or console mode
             if (Environment.UserInteractive)
             {
+                // Console mode, check for arguments
                 if (args.Length > 0)
                 {
                     try
                     {
-                        string parameter = string.Concat(args).TrimStart('/').TrimStart('-');
-                        switch (parameter)
+                        // Check entire parameter string for service install or uninstall request
+                        string ParameterString = string.Concat(args).TrimStart('/').TrimStart('-');
+                        switch (ParameterString)
                         {
                             case "i":
                             case "install":
@@ -56,7 +56,7 @@ namespace RandM.fTelnetProxy
             }
             else
             {
-                // running as service
+                // Service mode
                 using (var fTelnetProxyService = new Service())
                 {
                     ServiceBase.Run(fTelnetProxyService);

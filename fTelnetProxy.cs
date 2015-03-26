@@ -1,7 +1,6 @@
 ﻿using RandM.RMLib;
 using System;
 using System.IO;
-using System.Reflection;
 using System.Text;
 
 namespace RandM.fTelnetProxy

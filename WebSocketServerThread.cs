@@ -1,12 +1,10 @@
 ﻿// TODO Check for code that needs to be rewritten
-using System.Collections.Generic;
-using System;
-using System.Net.Sockets;
-using System.IO;
-using System.Text;
 using RandM.RMLib;
-using System.Threading;
+using System;
+using System.IO;
+using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
+using System.Text;
 
 namespace RandM.fTelnetProxy
 {
