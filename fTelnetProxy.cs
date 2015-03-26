@@ -11,13 +11,21 @@ namespace RandM.fTelnetProxy
     {
         private FileStream _LogStream = null;
         private object _LogStreamLock = new object();
-
-        WebSocketServerThread _WebSocketServer = null;
+        private WebSocketServerThread _WebSocketServer = null;
 
         public fTelnetProxy()
         {
-            _LogStream = new FileStream(Path.Combine(ProcessUtils.StartupPath, "fTelnetProxy.log"), FileMode.Append, FileAccess.Write, FileShare.Read);
             RMLog.Handler += RMLog_Handler;
+
+            try
+            {
+                _LogStream = new FileStream(Path.ChangeExtension(ProcessUtils.ExecutablePath, ".log"), FileMode.Append, FileAccess.Write, FileShare.Read);
+            }
+            catch (Exception ex)
+            {
+                RMLog.Exception(ex, "Failed to open " + Path.ChangeExtension(ProcessUtils.ExecutablePath, ".log") + " for writing");
+                Environment.Exit(1);
+            }
 
             RMLog.Info("fTelnetProxy Starting Up");
 
@@ -179,11 +187,14 @@ namespace RandM.fTelnetProxy
                 e.Level.ToString(),
                 e.Message);
 
-            byte[] MessageBytes = Encoding.ASCII.GetBytes(Message);
-            _LogStream.Write(MessageBytes, 0, MessageBytes.Length);
-            _LogStream.Flush();
+            if (_LogStream != null)
+            {
+                byte[] MessageBytes = Encoding.ASCII.GetBytes(Message);
+                _LogStream.Write(MessageBytes, 0, MessageBytes.Length);
+                _LogStream.Flush();
+            }
 
-            if (Environment.UserInteractive) Console.Write(Encoding.ASCII.GetString(MessageBytes));
+            if (Environment.UserInteractive) Console.Write(Message);
         }
 
         private void ShowHelp()
