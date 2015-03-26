@@ -44,7 +44,7 @@ namespace RandM.fTelnetProxy
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine("Error handling request: " + ex.Message);
+                        Console.WriteLine("Error handling service request: " + ex.Message);
                         return;
                     }
                 }

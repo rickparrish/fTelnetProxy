@@ -19,24 +19,21 @@ namespace RandM.fTelnetProxy
             _LogStream = new FileStream(Path.Combine(ProcessUtils.StartupPath, "fTelnetProxy.log"), FileMode.Append, FileAccess.Write, FileShare.Read);
             RMLog.Handler += RMLog_Handler;
 
-            if (Config.Default.Loaded | ParseCommandLineArgs())
+            RMLog.Info("fTelnetProxy Starting Up");
+
+            Config.Default.Load();
+            ParseCommandLineArgs();
+
+            RMLog.Info("Starting WebSocket Proxy Thread");
+            try
             {
-                RMLog.Info("fTelnetProxy Starting Up");
-                RMLog.Info("Starting WebSocket Proxy Thread");
-                try
-                {
-                    _WebSocketServer = new WebSocketServerThread("0.0.0.0", Config.Default.ListenPort); // TODO wss://
-                    _WebSocketServer.Start();
-                }
-                catch (Exception ex)
-                {
-                    RMLog.Exception(ex, "Failed to start WebSocket Proxy Thread");
-                    _WebSocketServer = null;
-                }
+                _WebSocketServer = new WebSocketServerThread("0.0.0.0", Config.Default.ListenPort);
+                _WebSocketServer.Start();
             }
-            else
+            catch (Exception ex)
             {
-                ShowHelp();
+                RMLog.Exception(ex, "Failed to start WebSocket Proxy Thread");
+                Environment.Exit(1);
             }
         }
 
@@ -60,116 +57,119 @@ namespace RandM.fTelnetProxy
             }
         }
 
-        private bool ParseCommandLineArgs()
+        private void ParseCommandLineArgs()
         {
             string[] Args = Environment.GetCommandLineArgs();
-            for (int i = 1; i < Args.Length; i++)
+            if (Args.Length > 1)
             {
-                // TODO This is cumbersome
-                switch (Args[i])
+                RMLog.Info("Overriding with settings from command-line");
+
+                for (int i = 1; i < Args.Length; i++)
                 {
-                    case "/c":
-                    case "-c":
-                    case "/cert":
-                    case "--cert":
-                        i += 1;
-                        Config.Default.CertFilename = Args[i];
-                        break;
+                    // TODO This is cumbersome
+                    // TODO Handle file not found errors here
+                    switch (Args[i])
+                    {
+                        case "/c":
+                        case "-c":
+                        case "/cert":
+                        case "--cert":
+                            i += 1;
+                            Config.Default.CertFilename = Args[i];
+                            RMLog.Info("-Cert file......" + Config.Default.CertFilename);
+                            break;
 
-                    case "/?":
-                    case "-?":
-                    case "/h":
-                    case "-h":
-                    case "/help":
-                    case "--help":
-                        ShowHelp();
-                        return false;
+                        case "/?":
+                        case "-?":
+                        case "/h":
+                        case "-h":
+                        case "/help":
+                        case "--help":
+                            ShowHelp();
+                            return;
 
-                    case "/l":
-                    case "-l":
-                    case "/loglevel":
-                    case "--loglevel":
-                        i += 1;
-                        try
-                        {
-                            RMLog.Level = (LogLevel)Enum.Parse(typeof(LogLevel), Args[i]);
-                        }
-                        catch (Exception)
-                        {
-                            Console.WriteLine();
-                            Console.WriteLine("Invalid loglevel '" + Args[i] + "'");
-                            Console.WriteLine();
-                            return false;
-                        }
-                        break;
-
-                    case "/p":
-                    case "-p":
-                    case "/port":
-                    case "--port":
-                        i += 1;
-                        try
-                        {
-                            Config.Default.ListenPort = Convert.ToInt16(Args[i]);
-                        }
-                        catch (Exception)
-                        {
-                            Console.WriteLine();
-                            Console.WriteLine("Invalid port '" + Args[i] + "'");
-                            Console.WriteLine();
-                            return false;
-                        }
-                        break;
-
-                    case "/pw":
-                    case "-pw":
-                    case "/password":
-                    case "--password":
-                        i += 1;
-                        Config.Default.CertPassword = Args[i];
-                        break;
-
-                    case "/r":
-                    case "-r":
-                    case "/relay":
-                    case "--relay":
-                        i += 1;
-                        Config.Default.RelayFilename = Args[i];
-                        break;
-
-                    case "/t":
-                    case "-t":
-                    case "/target":
-                    case "--target":
-                        i += 1;
-                        if (Args[i].Contains(":"))
-                        {
-                            Config.Default.TargetHostname = Args[i].Split(':')[0];
+                        case "/l":
+                        case "-l":
+                        case "/loglevel":
+                        case "--loglevel":
+                            i += 1;
                             try
                             {
-                                Config.Default.TargetPort = Convert.ToInt16(Args[i].Split(':')[1]);
+                                RMLog.Level = (LogLevel)Enum.Parse(typeof(LogLevel), Args[i]);
+                                RMLog.Info("-Log level......" + RMLog.Level.ToString());
                             }
-                            catch (Exception)
+                            catch (Exception ex)
                             {
-                                Console.WriteLine();
-                                Console.WriteLine("Invalid target port '" + Args[i].Split(':')[1] + "'");
-                                Console.WriteLine();
-                                return false;
+                                RMLog.Exception(ex, "-Invalid log level: '" + Args[i] + "'");
                             }
-                        }
-                        else
-                        {
-                            Config.Default.TargetHostname = Args[i];
-                        }
-                        break;
+                            break;
 
-                    default:
-                        RMLog.Error("Unknown parameter: '" + Args[i] + "'");
-                        return false;
+                        case "/p":
+                        case "-p":
+                        case "/port":
+                        case "--port":
+                            i += 1;
+                            try
+                            {
+                                Config.Default.ListenPort = Convert.ToInt16(Args[i]);
+                                RMLog.Info("-Listen port...." + Config.Default.ListenPort.ToString());
+                            }
+                            catch (Exception ex)
+                            {
+                                RMLog.Exception(ex, "-Invalid port: '" + Args[i] + "'");
+                            }
+                            break;
+
+                        case "/pw":
+                        case "-pw":
+                        case "/password":
+                        case "--password":
+                            i += 1;
+                            Config.Default.CertPassword = Args[i];
+                            RMLog.Info("-Cert password..yes (hidden)");
+                            break;
+
+                        case "/r":
+                        case "-r":
+                        case "/relay":
+                        case "--relay":
+                            i += 1;
+                            Config.Default.RelayFilename = Args[i];
+                            RMLog.Info("-Relay file....." + Config.Default.RelayFilename);
+                            break;
+
+                        case "/t":
+                        case "-t":
+                        case "/target":
+                        case "--target":
+                            i += 1;
+                            if (Args[i].Contains(":"))
+                            {
+                                Config.Default.TargetHostname = Args[i].Split(':')[0];
+                                try
+                                {
+                                    Config.Default.TargetPort = Convert.ToInt16(Args[i].Split(':')[1]);
+                                    RMLog.Info("-Target server.." + Config.Default.TargetHostname + ":" + Config.Default.TargetPort.ToString());
+                                }
+                                catch (Exception ex)
+                                {
+                                    RMLog.Exception(ex, "Invalid target port: '" + Args[i].Split(':')[1] + "'");
+                                    RMLog.Info("-Target server.." + Config.Default.TargetHostname + ":" + Config.Default.TargetPort.ToString());
+                                }
+                            }
+                            else
+                            {
+                                Config.Default.TargetHostname = Args[i];
+                                RMLog.Info("-Target server.." + Config.Default.TargetHostname + ":" + Config.Default.TargetPort.ToString());
+                            }
+                            break;
+
+                        default:
+                            RMLog.Error("-Unknown parameter: '" + Args[i] + "'");
+                            break;
+                    }
                 }
             }
-
-            return true;
         }
 
         void RMLog_Handler(object sender, RMLogEventArgs e)
@@ -197,9 +197,9 @@ namespace RandM.fTelnetProxy
                 Console.WriteLine();
                 Console.WriteLine("  /i, -i, /install, --install       Install the service");
                 Console.WriteLine();
-                Console.WriteLine("  /u, -u, /uninstall, --uninstall   Uninstall the service"); 
+                Console.WriteLine("  /u, -u, /uninstall, --uninstall   Uninstall the service");
                 Console.WriteLine();
-                Console.WriteLine("  Edit the " + Path.GetFileNameWithoutExtension(ProcessUtils.ExecutablePath) + ".ini file to configure");
+                Console.WriteLine("  Edit the " + Config.Default.FileName + ".ini file to configure");
                 Console.WriteLine();
                 Console.WriteLine();
                 Console.WriteLine("Console-mode parameters:");
