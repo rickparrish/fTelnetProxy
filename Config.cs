@@ -22,6 +22,7 @@ namespace RandM.fTelnetProxy
         public Config()
             : base(ConfigSaveLocation.Relative)
         {
+            Certificate = null;
             CertificateFilename = "";
             CertificatePassword = "";
             ListenPort = 1123;
@@ -31,13 +32,7 @@ namespace RandM.fTelnetProxy
             TargetPort = 23;
         }
 
-        public X509Certificate2 Certificate
-        {
-            get
-            {
-                return _Certificate;
-            }
-        }
+        public X509Certificate2 Certificate { get; set; }
 
         public new void Load()
         {
@@ -69,15 +64,6 @@ namespace RandM.fTelnetProxy
                     else
                     {
                         RMLog.Info("-Cert password..yes (hidden)");
-                    }
-
-                    try
-                    {
-                        _Certificate = new X509Certificate2(CertificateFilename, CertificatePassword);
-                    }
-                    catch (Exception ex)
-                    {
-                        RMLog.Exception(ex, "--Error loading cert file");
                     }
                 }
                 else

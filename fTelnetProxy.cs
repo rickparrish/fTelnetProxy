@@ -1,6 +1,7 @@
 ﻿using RandM.RMLib;
 using System;
 using System.IO;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 
 namespace RandM.fTelnetProxy
@@ -220,6 +221,18 @@ namespace RandM.fTelnetProxy
 
             Config.Default.Load();
             ParseCommandLineArgs();
+
+            if ((Config.Default.CertificateFilename != "") && File.Exists(Config.Default.CertificateFilename))
+            {
+                try
+                {
+                    Config.Default.Certificate = new X509Certificate2(Config.Default.CertificateFilename, Config.Default.CertificatePassword);
+                }
+                catch (Exception ex)
+                {
+                    RMLog.Exception(ex, "--Error loading cert file");
+                }
+            }
 
             try
             {

@@ -73,7 +73,13 @@ namespace RandM.fTelnetProxy
                                             // Handle normal connection
                                             RMLog.Info("Connection accepted from " + NewConnection.GetRemoteIP() + ":" + NewConnection.GetRemotePort());
 
-                                            string MessageText = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\r\n", "TODO scheme", NewConnection.GetRemoteIP(), NewConnection.GetRemotePort(), "TODO clientConnection.ConnectionInfo.Path", "TODO clientConnection.ConnectionInfo.NegotiatedSubProtocol");
+                                            string MessageText = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\r\n", 
+                                                DateTime.Now.ToString(),
+                                                NewConnection.GetRemoteIP(), 
+                                                NewConnection.GetRemotePort(),
+                                                NewConnection.Header["Path"],
+                                                NewConnection.Protocol,
+                                                NewConnection.SubProtocol);
                                             byte[] MessageBytes = Encoding.ASCII.GetBytes(MessageText);
                                             LogStream.Write(MessageBytes, 0, MessageBytes.Length);
                                             LogStream.Flush();
