@@ -152,14 +152,29 @@ namespace RandM.fTelnetProxy
                 e.Level.ToString(),
                 e.Message);
 
-            if (_LogStream != null)
+            lock (_LogStreamLock)
             {
-                byte[] MessageBytes = Encoding.ASCII.GetBytes(Message);
-                _LogStream.Write(MessageBytes, 0, MessageBytes.Length);
-                _LogStream.Flush();
-            }
+                if (_LogStream != null)
+                {
+                    byte[] MessageBytes = Encoding.ASCII.GetBytes(Message);
+                    _LogStream.Write(MessageBytes, 0, MessageBytes.Length);
+                    _LogStream.Flush();
+                }
 
-            if (Environment.UserInteractive) Console.Write(Message);
+                if (Environment.UserInteractive)
+                {
+                    switch (e.Level)
+                    {
+                        case LogLevel.Trace: Console.ForegroundColor = ConsoleColor.DarkGray; break;
+                        case LogLevel.Debug: Console.ForegroundColor = ConsoleColor.Cyan; break;
+                        case LogLevel.Info: Console.ForegroundColor = ConsoleColor.Gray; break;
+                        case LogLevel.Warning: Console.ForegroundColor = ConsoleColor.Yellow; break;
+                        case LogLevel.Error: Console.ForegroundColor = ConsoleColor.Red; break;
+                        default: Console.ForegroundColor = ConsoleColor.Gray; break;
+                    }
+                    Console.Write(Message);
+                }
+            }
         }
 
         private void ShowHelp()
