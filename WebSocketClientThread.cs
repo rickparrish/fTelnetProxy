@@ -9,12 +9,14 @@ namespace RandM.fTelnetProxy
 {
     public class WebSocketClientThread : RMThread
     {
-        private WebSocketConnection _WebSocketConnection = null;
+        private int _ConnectionId = 0;
         private TcpConnection _TcpConnection = null;
+        private WebSocketConnection _WebSocketConnection = null;
 
-        public WebSocketClientThread(WebSocketConnection connection)
+        public WebSocketClientThread(WebSocketConnection connection, int connectionId)
         {
             _WebSocketConnection = connection;
+            _ConnectionId = connectionId;
         }
 
         protected override void Execute()
@@ -71,24 +73,24 @@ namespace RandM.fTelnetProxy
                                 }
                                 else
                                 {
-                                    RMLog.Error("Relay file is empty: '" + Config.Default.RelayFilename + "'");
+                                    RMLog.Error("{" + _ConnectionId.ToString() + "} Relay file is empty: '" + Config.Default.RelayFilename + "'");
                                 }
                             }
                             else
                             {
-                                RMLog.Error("Relay file does not exist: '" + Config.Default.RelayFilename + "'");
+                                RMLog.Error("{" + _ConnectionId.ToString() + "} Relay file does not exist: '" + Config.Default.RelayFilename + "'");
                             }
                         }
                         catch (Exception ex)
                         {
-                            RMLog.Exception(ex, "Error reading relay file: '" + Config.Default.RelayFilename + "'");
+                            RMLog.Exception(ex, "{" + _ConnectionId.ToString() + "} Error reading relay file: '" + Config.Default.RelayFilename + "'");
                         }
                     }
                 }
 
                 if (!CanRelay)
                 {
-                    RMLog.Info("Rejecting request for " + Hostname + ":" + Port.ToString());
+                    RMLog.Info("{" + _ConnectionId.ToString() + "} Rejecting request for " + Hostname + ":" + Port.ToString());
                     _WebSocketConnection.WriteLn("Sorry, for security reasons this proxy won't connect to " + Hostname + ":" + Port.ToString());
                     Thread.Sleep(2500);
                     _WebSocketConnection.Close();
@@ -101,7 +103,7 @@ namespace RandM.fTelnetProxy
             _TcpConnection = new TcpConnection();
             if (_TcpConnection.Connect(Hostname, Port))
             {
-                RMLog.Info("Connected to " + Hostname + ":" + Port.ToString());
+                RMLog.Info("{" + _ConnectionId.ToString() + "} Connected to " + Hostname + ":" + Port.ToString());
                 _WebSocketConnection.WriteLn("connected!");
 
                 // Repeatedly move data around until a connection is closed (or a stop is requested)
@@ -128,17 +130,17 @@ namespace RandM.fTelnetProxy
                 // Check why we exited the loop
                 if (_Stop)
                 {
-                    RMLog.Info("Stop requested");
+                    RMLog.Info("{" + _ConnectionId.ToString() + "} Stop requested");
                     _WebSocketConnection.Write(Ansi.GotoXY(1, 1) + Ansi.CursorDown(255) + "\r\nProxy server shutting down...");
                     Thread.Sleep(2500);
                 }
                 else if (!_WebSocketConnection.Connected)
                 {
-                    RMLog.Info("Client closed connection");
+                    RMLog.Info("{" + _ConnectionId.ToString() + "} Client closed connection");
                 }
                 else if (!_TcpConnection.Connected)
                 {
-                    RMLog.Info("Server closed connection");
+                    RMLog.Info("{" + _ConnectionId.ToString() + "} Server closed connection");
                     _WebSocketConnection.Write(Ansi.GotoXY(1, 1) + Ansi.CursorDown(255) + "\r\nServer closed connection...");
                     Thread.Sleep(2500);
                 }
@@ -149,7 +151,7 @@ namespace RandM.fTelnetProxy
             }
             else
             {
-                RMLog.Info("Unable to connect to " + Hostname + ":" + Port.ToString());
+                RMLog.Info("{" + _ConnectionId.ToString() + "} Unable to connect to " + Hostname + ":" + Port.ToString());
                 _WebSocketConnection.WriteLn("unable to connect!");
                 Thread.Sleep(2500);
                 _WebSocketConnection.Close();

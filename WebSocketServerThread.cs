@@ -11,8 +11,9 @@ namespace RandM.fTelnetProxy
     public class WebSocketServerThread : RMThread
     {
         private string _Address;
-        private List<WebSocketClientThread> ClientThreads = new List<WebSocketClientThread>();
-        private object ClientThreadsLock = new object();
+        private int _ClientThreadCounter = 0;
+        private List<WebSocketClientThread> _ClientThreads = new List<WebSocketClientThread>();
+        private object _ClientThreadsLock = new object();
         private int _Port;
         private TcpConnection _Server = null;
 
@@ -24,11 +25,11 @@ namespace RandM.fTelnetProxy
 
         void ClientThread_FinishEvent(object sender, EventArgs e)
         {
-            lock (ClientThreadsLock)
+            lock (_ClientThreadsLock)
             {
-                if ((sender is WebSocketClientThread) && ClientThreads.Contains((WebSocketClientThread)sender))
+                if ((sender is WebSocketClientThread) && _ClientThreads.Contains((WebSocketClientThread)sender))
                 {
-                    ClientThreads.Remove((WebSocketClientThread)sender);
+                    _ClientThreads.Remove((WebSocketClientThread)sender);
                 }
             }
         }
@@ -71,7 +72,8 @@ namespace RandM.fTelnetProxy
                                         else
                                         {
                                             // Handle normal connection
-                                            RMLog.Info("Connection accepted from " + NewConnection.GetRemoteIP() + ":" + NewConnection.GetRemotePort());
+                                            _ClientThreadCounter += 1;
+                                            RMLog.Info("{" + _ClientThreadCounter.ToString() + "} Connection accepted from " + NewConnection.GetRemoteIP() + ":" + NewConnection.GetRemotePort());
 
                                             string MessageText = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\r\n", 
                                                 DateTime.Now.ToString(),
@@ -84,11 +86,11 @@ namespace RandM.fTelnetProxy
                                             LogStream.Write(MessageBytes, 0, MessageBytes.Length);
                                             LogStream.Flush();
 
-                                            WebSocketClientThread ClientThread = new WebSocketClientThread(NewConnection);
+                                            WebSocketClientThread ClientThread = new WebSocketClientThread(NewConnection, _ClientThreadCounter);
                                             ClientThread.FinishEvent += ClientThread_FinishEvent;
-                                            lock (ClientThreadsLock)
+                                            lock (_ClientThreadsLock)
                                             {
-                                                ClientThreads.Add(ClientThread);
+                                                _ClientThreads.Add(ClientThread);
                                             }
                                             ClientThread.Start();
                                         }
@@ -116,21 +118,21 @@ namespace RandM.fTelnetProxy
 
                     // Stop client threads
                     int ClientThreadCount = 0;
-                    lock (ClientThreadsLock)
+                    lock (_ClientThreadsLock)
                     {
-                        foreach (var ClientThread in ClientThreads)
+                        foreach (var ClientThread in _ClientThreads)
                         {
                             if (ClientThread != null) ClientThread.Stop();
                         }
-                        ClientThreadCount = ClientThreads.Count;
+                        ClientThreadCount = _ClientThreads.Count;
                     }
 
                     // Wait for client threads
                     while (ClientThreadCount > 0)
                     {
-                        lock (ClientThreadsLock)
+                        lock (_ClientThreadsLock)
                         {
-                            ClientThreadCount = ClientThreads.Count;
+                            ClientThreadCount = _ClientThreads.Count;
                         }
                         Thread.Sleep(100);
                     }
