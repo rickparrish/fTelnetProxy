@@ -30,6 +30,7 @@ namespace RandM.fTelnetProxy
                 if ((sender is WebSocketClientThread) && _ClientThreads.Contains((WebSocketClientThread)sender))
                 {
                     _ClientThreads.Remove((WebSocketClientThread)sender);
+                    RMLog.Info(_ClientThreads.Count.ToString() + " active connections");
                 }
             }
         }
@@ -91,6 +92,7 @@ namespace RandM.fTelnetProxy
                                             lock (_ClientThreadsLock)
                                             {
                                                 _ClientThreads.Add(ClientThread);
+                                                RMLog.Info(_ClientThreads.Count.ToString() + " active connections");
                                             }
                                             ClientThread.Start();
                                         }
