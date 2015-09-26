@@ -15,8 +15,6 @@ namespace RandM.fTelnetProxy
         public string TargetHostname { get; set; }
         public int TargetPort { get; set; }
 
-        private X509Certificate2 _Certificate = null;
-
         static public Config Default = new Config();
 
         public Config()

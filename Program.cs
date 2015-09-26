@@ -1,7 +1,9 @@
-﻿using System;
+﻿using RandM.RMLib;
+using System;
 using System.Configuration.Install;
 using System.Reflection;
 using System.ServiceProcess;
+using System.Threading;
 
 namespace RandM.fTelnetProxy
 {
@@ -13,7 +15,7 @@ namespace RandM.fTelnetProxy
         static void Main(string[] args)
         {
             // Check for service mode or console mode
-            if (Environment.UserInteractive)
+            if ((Environment.UserInteractive) || OSUtils.IsUnix)
             {
                 // Console mode, check for arguments
                 if (args.Length > 0)
@@ -50,10 +52,20 @@ namespace RandM.fTelnetProxy
                 {
                     fTelnetProxy.Start();
 
-                    do
+                    Console.WriteLine("Press Q to Quit...");
+
+                    while (true)
                     {
-                        Console.WriteLine("Press Q to Quit...");
-                    } while (Console.ReadKey(true).Key != ConsoleKey.Q);
+                        if (Console.KeyAvailable)
+                        {
+                            if (Console.ReadKey(true).Key == ConsoleKey.Q) break;
+                        }
+                        else
+                        {
+                            Thread.Sleep(100);
+                        }
+                    }
+
                     Console.WriteLine("Exiting...");
 
                     fTelnetProxy.Stop();

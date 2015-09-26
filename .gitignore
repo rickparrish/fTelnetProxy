@@ -4,6 +4,9 @@ bin/Release/*
 !bin/Release/RMLib.dll
 obj/*
 packages/*
+
+fTelnetProxy.ini
+rsync-to-proxies.cmd
 *.pfx
 *.suo
 *.user
