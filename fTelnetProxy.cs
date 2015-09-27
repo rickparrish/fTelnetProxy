@@ -13,10 +13,41 @@ namespace RandM.fTelnetProxy
         private bool _Stopping = false;
         private WebSocketServerThread _WebSocketServer = null;
 
+        #region IDisposable Support
+        private bool disposedValue = false; // To detect redundant calls
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    // TODO: dispose managed state (managed objects).
+                    if (!_Stopping) Stop();
+                    if (_WebSocketServer != null) _WebSocketServer.Dispose();
+                }
+
+                // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
+                // TODO: set large fields to null.
+
+                disposedValue = true;
+            }
+        }
+
+        ~fTelnetProxy()
+        {
+            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
+            Dispose(false);
+        }
+
+        // This code added to correctly implement the disposable pattern.
         public void Dispose()
         {
-            if (!_Stopping) Stop();
+            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
+            Dispose(true);
+            GC.SuppressFinalize(this);
         }
+        #endregion
 
         private void ParseCommandLineArgs()
         {
