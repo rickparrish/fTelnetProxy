@@ -161,7 +161,7 @@ namespace RandM.fTelnetProxy
                     _LogStream.Flush();
                 }
 
-                if (Environment.UserInteractive)
+                if ((Environment.UserInteractive) || OSUtils.IsUnix)
                 {
                     switch (e.Level)
                     {
@@ -179,7 +179,7 @@ namespace RandM.fTelnetProxy
 
         private void ShowHelp()
         {
-            if (Environment.UserInteractive)
+            if ((Environment.UserInteractive) || OSUtils.IsUnix)
             {
                 //Console.WriteLine("345678901234567890123456789012345678901234567890123456789012345678901234567890");
                 Console.WriteLine();                                                                               //
