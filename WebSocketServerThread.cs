@@ -106,7 +106,7 @@ namespace RandM.fTelnetProxy
                                             }
                                             else
                                             {
-                                                RMLog.Warning("Invalid WebSocket connection from " + NewConnection.GetRemoteIP() + ":" + NewConnection.GetRemotePort().ToString());
+                                                RMLog.Trace("Invalid WebSocket connection from " + NewConnection.GetRemoteIP() + ":" + NewConnection.GetRemotePort().ToString());
                                             }
                                             NewConnection.Close();
                                         }
