@@ -58,7 +58,15 @@ namespace RandM.fTelnetProxy
                     {
                         if (Console.KeyAvailable)
                         {
-                            if (Console.ReadKey(true).Key == ConsoleKey.Q) break;
+                            if (Console.ReadKey(true).Key == ConsoleKey.Q)
+                            {
+                                break;
+                            }
+                            else
+                            {
+                                Console.WriteLine(fTelnetProxy.ClientConnectionCount.ToString() + " active connections");
+                                Console.WriteLine("Press Q to Quit...");
+                            }
                         }
                         else
                         {

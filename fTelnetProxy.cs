@@ -49,6 +49,14 @@ namespace RandM.fTelnetProxy
         }
         #endregion
 
+        public int ClientConnectionCount
+        {
+            get
+            {
+                return _WebSocketServer.ClientConnectionCount;
+            }
+        }
+
         private void ParseCommandLineArgs()
         {
             string[] Args = Environment.GetCommandLineArgs();

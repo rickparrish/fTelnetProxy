@@ -23,6 +23,17 @@ namespace RandM.fTelnetProxy
             _Port = port;
         }
 
+        public int ClientConnectionCount
+        {
+            get
+            {
+                lock (_ClientThreadsLock)
+                {
+                    return _ClientThreads.Count;
+                }
+            }
+        }
+
         void ClientThread_FinishEvent(object sender, EventArgs e)
         {
             lock (_ClientThreadsLock)
