@@ -73,11 +73,11 @@ namespace RandM.fTelnetProxy
                                                 string Ping = NewConnection.ReadLn(1000);
                                                 if (NewConnection.ReadTimedOut)
                                                 {
-                                                    RMLog.Debug("Answering a /ping (no time received) from " + NewConnection.GetRemoteIP() + ":" + NewConnection.GetRemotePort());
+                                                    RMLog.Debug("Answering a /ping (no time received) from " + NewConnection.GetRemoteIP() + "," + NewConnection.GetRemotePort());
                                                 }
                                                 else
                                                 {
-                                                    RMLog.Debug("Answering a /ping (" + Ping + ") from " + NewConnection.GetRemoteIP() + ":" + NewConnection.GetRemotePort());
+                                                    RMLog.Debug("Answering a /ping (" + Ping + ") from " + NewConnection.GetRemoteIP() + "," + NewConnection.GetRemotePort());
                                                     NewConnection.Write(Ping);
                                                 }
                                                 NewConnection.Close();
@@ -86,7 +86,7 @@ namespace RandM.fTelnetProxy
                                             {
                                                 // Handle normal connection
                                                 _ClientThreadCounter += 1;
-                                                RMLog.Info("{" + _ClientThreadCounter.ToString() + "} Connection accepted from " + NewConnection.GetRemoteIP() + ":" + NewConnection.GetRemotePort());
+                                                RMLog.Info("{" + _ClientThreadCounter.ToString() + "} Connection accepted from " + NewConnection.GetRemoteIP() + "," + NewConnection.GetRemotePort());
 
                                                 string MessageText = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\r\n",
                                                     DateTime.Now.ToString(),
@@ -113,11 +113,11 @@ namespace RandM.fTelnetProxy
                                         {
                                             if (NewConnection.FlashPolicyFileRequest)
                                             {
-                                                RMLog.Info("Answered flash policy file request from " + NewConnection.GetRemoteIP() + ":" + NewConnection.GetRemotePort().ToString());
+                                                RMLog.Info("Answered flash policy file request from " + NewConnection.GetRemoteIP() + "," + NewConnection.GetRemotePort().ToString());
                                             }
                                             else
                                             {
-                                                RMLog.Trace("Invalid WebSocket connection from " + NewConnection.GetRemoteIP() + ":" + NewConnection.GetRemotePort().ToString());
+                                                RMLog.Trace("Invalid WebSocket connection from " + NewConnection.GetRemoteIP() + "," + NewConnection.GetRemotePort().ToString());
                                             }
                                             NewConnection.Close();
                                         }
@@ -154,7 +154,7 @@ namespace RandM.fTelnetProxy
                 }
                 else
                 {
-                    RMLog.Error("WebSocket Server Thread: Unable to listen on " + _Address + ":" + _Port);
+                    RMLog.Error("WebSocket Server Thread: Unable to listen on " + _Address + "," + _Port);
                 }
             }
         }

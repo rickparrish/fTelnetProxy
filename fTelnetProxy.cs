@@ -155,24 +155,26 @@ namespace RandM.fTelnetProxy
                         case "t":
                         case "target":
                             i += 1;
-                            if (Args[i].Contains(":"))
+                            // TODOX IPV6 IP addresses will contain a :, so this needs reworking (ie 1 colon means host:port, more than one means ipv6 address)
+                            if (Args[i].Contains(":") || Args[i].Contains(","))
                             {
-                                Config.Default.TargetHostname = Args[i].Split(':')[0];
+                                string[] HostPort = Args[i].Split(new char[] { ':', ',' });
+                                Config.Default.TargetHostname = HostPort[0];
                                 try
                                 {
-                                    Config.Default.TargetPort = Convert.ToInt16(Args[i].Split(':')[1]);
-                                    RMLog.Info("-Target server.." + Config.Default.TargetHostname + ":" + Config.Default.TargetPort.ToString());
+                                    Config.Default.TargetPort = Convert.ToInt16(HostPort[1]);
+                                    RMLog.Info("-Target server.." + Config.Default.TargetHostname + "," + Config.Default.TargetPort.ToString());
                                 }
                                 catch (Exception ex)
                                 {
-                                    RMLog.Exception(ex, "Invalid target port: '" + Args[i].Split(':')[1] + "'");
-                                    RMLog.Info("-Target server.." + Config.Default.TargetHostname + ":" + Config.Default.TargetPort.ToString());
+                                    RMLog.Exception(ex, "Invalid target port: '" + HostPort[1] + "'");
+                                    RMLog.Info("-Target server.." + Config.Default.TargetHostname + "," + Config.Default.TargetPort.ToString());
                                 }
                             }
                             else
                             {
                                 Config.Default.TargetHostname = Args[i];
-                                RMLog.Info("-Target server.." + Config.Default.TargetHostname + ":" + Config.Default.TargetPort.ToString());
+                                RMLog.Info("-Target server.." + Config.Default.TargetHostname + "," + Config.Default.TargetPort.ToString());
                             }
                             break;
 

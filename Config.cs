@@ -42,7 +42,7 @@ namespace RandM.fTelnetProxy
             // Output the settings being used
             RMLog.Info("Using settings from " + base.FileName);
             RMLog.Info("-Listen port...." + ListenPort.ToString());
-            RMLog.Info("-Target server.." + TargetHostname + ":" + TargetPort.ToString());
+            RMLog.Info("-Target server.." + TargetHostname + "," + TargetPort.ToString());
             RMLog.Info("-Log level......" + LogLevel.ToString());
             if (CertificateFilename != "")
             {
