@@ -61,7 +61,7 @@ namespace RandM.fTelnetProxy
                                         // Not a whitelisted port, check for a whitelisted host
                                         if (!CanRelay)
                                         {
-                                            string RequestedHostPort = Hostname + "," + Port.ToString();
+                                            string RequestedHostPort = Hostname + ":" + Port.ToString();
                                             foreach (string AllowedHost in AllowedHosts)
                                             {
                                                 if (AllowedHost.Trim() == RequestedHostPort)
@@ -91,20 +91,20 @@ namespace RandM.fTelnetProxy
 
                     if (!CanRelay)
                     {
-                        RMLog.Info("{" + _ConnectionId.ToString() + "} Rejecting request for " + Hostname + "," + Port.ToString());
-                        _WebSocketConnection.WriteLn("Sorry, for security reasons this proxy won't connect to " + Hostname + "," + Port.ToString());
+                        RMLog.Info("{" + _ConnectionId.ToString() + "} Rejecting request for " + Hostname + ":" + Port.ToString());
+                        _WebSocketConnection.WriteLn("Sorry, for security reasons this proxy won't connect to " + Hostname + ":" + Port.ToString());
                         Thread.Sleep(2500);
                         return;
                     }
                 }
 
                 // Try to connect to the desired Host and Port
-                _WebSocketConnection.Write(Ansi.ClrScr() + "Connecting to " + Hostname + "," + Port.ToString() + "...");
+                _WebSocketConnection.Write(Ansi.ClrScr() + "Connecting to " + Hostname + ":" + Port.ToString() + "...");
                 using (TcpConnection _TcpConnection = new TcpConnection())
                 {
                     if (_TcpConnection.Connect(Hostname, Port))
                     {
-                        RMLog.Info("{" + _ConnectionId.ToString() + "} Connected to " + Hostname + "," + Port.ToString());
+                        RMLog.Info("{" + _ConnectionId.ToString() + "} Connected to " + Hostname + ":" + Port.ToString());
                         _WebSocketConnection.WriteLn("connected!");
 
                         // Repeatedly move data around until a connection is closed (or a stop is requested)
@@ -148,7 +148,7 @@ namespace RandM.fTelnetProxy
                     }
                     else
                     {
-                        RMLog.Info("{" + _ConnectionId.ToString() + "} Unable to connect to " + Hostname + "," + Port.ToString());
+                        RMLog.Info("{" + _ConnectionId.ToString() + "} Unable to connect to " + Hostname + ":" + Port.ToString());
                         _WebSocketConnection.WriteLn("unable to connect!");
                         Thread.Sleep(2500);
                     }

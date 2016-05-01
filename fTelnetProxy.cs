@@ -78,7 +78,7 @@ namespace RandM.fTelnetProxy
                             {
                                 Args[i] = StringUtils.PathCombine(ProcessUtils.StartupPath, Args[i]);
                             }
-                            
+
                             if (File.Exists(Args[i]))
                             {
                                 Config.Default.CertificateFilename = Args[i];
@@ -155,27 +155,12 @@ namespace RandM.fTelnetProxy
                         case "t":
                         case "target":
                             i += 1;
-                            // TODOX IPV6 IP addresses will contain a :, so this needs reworking (ie 1 colon means host:port, more than one means ipv6 address)
-                            if (Args[i].Contains(":") || Args[i].Contains(","))
-                            {
-                                string[] HostPort = Args[i].Split(new char[] { ':', ',' });
-                                Config.Default.TargetHostname = HostPort[0];
-                                try
-                                {
-                                    Config.Default.TargetPort = Convert.ToInt16(HostPort[1]);
-                                    RMLog.Info("-Target server.." + Config.Default.TargetHostname + "," + Config.Default.TargetPort.ToString());
-                                }
-                                catch (Exception ex)
-                                {
-                                    RMLog.Exception(ex, "Invalid target port: '" + HostPort[1] + "'");
-                                    RMLog.Info("-Target server.." + Config.Default.TargetHostname + "," + Config.Default.TargetPort.ToString());
-                                }
-                            }
-                            else
-                            {
-                                Config.Default.TargetHostname = Args[i];
-                                RMLog.Info("-Target server.." + Config.Default.TargetHostname + "," + Config.Default.TargetPort.ToString());
-                            }
+                            string TargetHostname = Config.Default.TargetHostname;
+                            int TargetPort = Config.Default.TargetPort;
+                            WebUtils.ParseHostPort(Args[i], ref TargetHostname, ref TargetPort);
+                            Config.Default.TargetHostname = TargetHostname;
+                            Config.Default.TargetPort = TargetPort;
+                            RMLog.Info("-Target server.." + Config.Default.TargetHostname + ":" + Config.Default.TargetPort.ToString());
                             break;
 
                         default:
@@ -238,7 +223,7 @@ namespace RandM.fTelnetProxy
                 Console.WriteLine("Console-mode parameters:");                                                     //
                 Console.WriteLine();                                                                               //
                 Console.WriteLine("  -p <port>                  Port to listen for connections on");               //
-                Console.WriteLine("  --port <port>              Default is 1123");                                 //
+                Console.WriteLine("  --port <port>              Default is 80");                                   //
                 Console.WriteLine();                                                                               //
                 Console.WriteLine("  -t <host:port>             Telnet server to redirect to");                    //
                 Console.WriteLine("  --target <host:port>       Default is localhost:23");                         //
@@ -326,7 +311,7 @@ namespace RandM.fTelnetProxy
                 _LogStream.WriteByte(0x0A);
                 _LogStream.Close();
                 _LogStream.Dispose();
-            } 
+            }
         }
     }
 }
