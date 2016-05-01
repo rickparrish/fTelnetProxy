@@ -3,10 +3,8 @@ using System;
 using System.IO;
 using System.Security.Cryptography.X509Certificates;
 
-namespace RandM.fTelnetProxy
-{
-    public class Config : ConfigHelper
-    {
+namespace RandM.fTelnetProxy {
+    public class Config : ConfigHelper {
         public string CertificateFilename { get; set; }
         public string CertificatePassword { get; set; }
         public int ListenPort { get; set; }
@@ -18,8 +16,7 @@ namespace RandM.fTelnetProxy
         static public Config Default = new Config();
 
         public Config()
-            : base(ConfigSaveLocation.Relative)
-        {
+            : base(ConfigSaveLocation.Relative) {
             Certificate = null;
             CertificateFilename = "";
             CertificatePassword = "";
@@ -32,8 +29,7 @@ namespace RandM.fTelnetProxy
 
         public X509Certificate2 Certificate { get; set; }
 
-        public new void Load()
-        {
+        public new void Load() {
             // Try to load, and save a new file if load failed
             if (!base.Load()) base.Save();
 
@@ -44,47 +40,34 @@ namespace RandM.fTelnetProxy
             RMLog.Info("-Listen port...." + ListenPort.ToString());
             RMLog.Info("-Target server.." + TargetHostname + ":" + TargetPort.ToString());
             RMLog.Info("-Log level......" + LogLevel.ToString());
-            if (CertificateFilename != "")
-            {
+            if (CertificateFilename != "") {
                 // If file doesn't exist, and it's relative, convert to absolute
-                if (!File.Exists(CertificateFilename) && !Path.IsPathRooted(CertificateFilename))
-                {
+                if (!File.Exists(CertificateFilename) && !Path.IsPathRooted(CertificateFilename)) {
                     CertificateFilename = StringUtils.PathCombine(ProcessUtils.StartupPath, CertificateFilename);
                 }
 
-                if (File.Exists(CertificateFilename))
-                {
+                if (File.Exists(CertificateFilename)) {
                     RMLog.Info("-Cert file......" + CertificateFilename);
-                    if (CertificatePassword == "")
-                    {
+                    if (CertificatePassword == "") {
                         RMLog.Info("-Cert password..none");
-                    }
-                    else
-                    {
+                    } else {
                         RMLog.Info("-Cert password..yes (hidden)");
                     }
-                }
-                else
-                {
+                } else {
                     RMLog.Error("-Cert file not found: '" + CertificateFilename + "'");
                     CertificateFilename = "";
                 }
 
             }
-            if (RelayFilename != "")
-            {
+            if (RelayFilename != "") {
                 // If file doesn't exist, and it's relative, convert to absolute
-                if (!File.Exists(RelayFilename) && !Path.IsPathRooted(RelayFilename))
-                {
+                if (!File.Exists(RelayFilename) && !Path.IsPathRooted(RelayFilename)) {
                     RelayFilename = StringUtils.PathCombine(ProcessUtils.StartupPath, RelayFilename);
                 }
 
-                if (File.Exists(RelayFilename))
-                {
+                if (File.Exists(RelayFilename)) {
                     RMLog.Info("-Relay file....." + RelayFilename);
-                }
-                else
-                {
+                } else {
                     RMLog.Error("-Relay file not found: '" + RelayFilename + "'");
                     RelayFilename = "";
                 }

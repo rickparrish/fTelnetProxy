@@ -4,10 +4,8 @@ using System.IO;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 
-namespace RandM.fTelnetProxy
-{
-    public class fTelnetProxy : IDisposable
-    {
+namespace RandM.fTelnetProxy {
+    public class fTelnetProxy : IDisposable {
         private FileStream _LogStream = null;
         private object _LogStreamLock = new object();
         private bool _Stopping = false;
@@ -16,12 +14,9 @@ namespace RandM.fTelnetProxy
         #region IDisposable Support
         private bool disposedValue = false; // To detect redundant calls
 
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!disposedValue)
-            {
-                if (disposing)
-                {
+        protected virtual void Dispose(bool disposing) {
+            if (!disposedValue) {
+                if (disposing) {
                     // TODO: dispose managed state (managed objects).
                     if (!_Stopping) Stop();
                     if (_WebSocketServer != null) _WebSocketServer.Dispose();
@@ -34,58 +29,46 @@ namespace RandM.fTelnetProxy
             }
         }
 
-        ~fTelnetProxy()
-        {
+        ~fTelnetProxy() {
             // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
             Dispose(false);
         }
 
         // This code added to correctly implement the disposable pattern.
-        public void Dispose()
-        {
+        public void Dispose() {
             // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
             Dispose(true);
             GC.SuppressFinalize(this);
         }
         #endregion
 
-        public int ClientConnectionCount
-        {
-            get
-            {
+        public int ClientConnectionCount {
+            get {
                 return _WebSocketServer.ClientConnectionCount;
             }
         }
 
-        private void ParseCommandLineArgs()
-        {
+        private void ParseCommandLineArgs() {
             string[] Args = Environment.GetCommandLineArgs();
-            if (Args.Length > 1)
-            {
+            if (Args.Length > 1) {
                 RMLog.Info("Overriding with settings from command-line");
 
-                for (int i = 1; i < Args.Length; i++)
-                {
+                for (int i = 1; i < Args.Length; i++) {
                     string Arg = Args[i].TrimStart('/').TrimStart('-');
-                    switch (Arg)
-                    {
+                    switch (Arg) {
                         case "c":
                         case "cert":
                             i += 1;
 
                             // If file doesn't exist, and it's relative, convert to absolute
-                            if (!File.Exists(Args[i]) && !Path.IsPathRooted(Args[i]))
-                            {
+                            if (!File.Exists(Args[i]) && !Path.IsPathRooted(Args[i])) {
                                 Args[i] = StringUtils.PathCombine(ProcessUtils.StartupPath, Args[i]);
                             }
 
-                            if (File.Exists(Args[i]))
-                            {
+                            if (File.Exists(Args[i])) {
                                 Config.Default.CertificateFilename = Args[i];
                                 RMLog.Info("-Cert file......" + Config.Default.CertificateFilename);
-                            }
-                            else
-                            {
+                            } else {
                                 RMLog.Error("-Cert file not found: '" + Args[i] + "'");
                             }
                             break;
@@ -99,13 +82,10 @@ namespace RandM.fTelnetProxy
                         case "l":
                         case "loglevel":
                             i += 1;
-                            try
-                            {
+                            try {
                                 RMLog.Level = (LogLevel)Enum.Parse(typeof(LogLevel), Args[i]);
                                 RMLog.Info("-Log level......" + RMLog.Level.ToString());
-                            }
-                            catch (Exception ex)
-                            {
+                            } catch (Exception ex) {
                                 RMLog.Exception(ex, "-Invalid log level: '" + Args[i] + "'");
                             }
                             break;
@@ -113,13 +93,10 @@ namespace RandM.fTelnetProxy
                         case "p":
                         case "port":
                             i += 1;
-                            try
-                            {
+                            try {
                                 Config.Default.ListenPort = Convert.ToInt16(Args[i]);
                                 RMLog.Info("-Listen port...." + Config.Default.ListenPort.ToString());
-                            }
-                            catch (Exception ex)
-                            {
+                            } catch (Exception ex) {
                                 RMLog.Exception(ex, "-Invalid port: '" + Args[i] + "'");
                             }
                             break;
@@ -136,18 +113,14 @@ namespace RandM.fTelnetProxy
                             i += 1;
 
                             // If file doesn't exist, and it's relative, convert to absolute
-                            if (!File.Exists(Args[i]) && !Path.IsPathRooted(Args[i]))
-                            {
+                            if (!File.Exists(Args[i]) && !Path.IsPathRooted(Args[i])) {
                                 Args[i] = StringUtils.PathCombine(ProcessUtils.StartupPath, Args[i]);
                             }
 
-                            if (File.Exists(Args[i]))
-                            {
+                            if (File.Exists(Args[i])) {
                                 Config.Default.RelayFilename = Args[i];
                                 RMLog.Info("-Relay file....." + Config.Default.RelayFilename);
-                            }
-                            else
-                            {
+                            } else {
                                 RMLog.Error("-Relay file not found: '" + Args[i] + "'");
                             }
                             break;
@@ -171,26 +144,21 @@ namespace RandM.fTelnetProxy
             }
         }
 
-        void RMLog_Handler(object sender, RMLogEventArgs e)
-        {
+        void RMLog_Handler(object sender, RMLogEventArgs e) {
             string Message = string.Format("[{0}] [{1}] {2}\r\n",
                 DateTime.Now.ToString(),
                 e.Level.ToString(),
                 e.Message);
 
-            lock (_LogStreamLock)
-            {
-                if (_LogStream != null)
-                {
+            lock (_LogStreamLock) {
+                if (_LogStream != null) {
                     byte[] MessageBytes = Encoding.ASCII.GetBytes(Message);
                     _LogStream.Write(MessageBytes, 0, MessageBytes.Length);
                     _LogStream.Flush();
                 }
 
-                if ((Environment.UserInteractive) || OSUtils.IsUnix)
-                {
-                    switch (e.Level)
-                    {
+                if ((Environment.UserInteractive) || OSUtils.IsUnix) {
+                    switch (e.Level) {
                         case LogLevel.Trace: Console.ForegroundColor = ConsoleColor.DarkGray; break;
                         case LogLevel.Debug: Console.ForegroundColor = ConsoleColor.Cyan; break;
                         case LogLevel.Info: Console.ForegroundColor = ConsoleColor.Gray; break;
@@ -203,10 +171,8 @@ namespace RandM.fTelnetProxy
             }
         }
 
-        private void ShowHelp()
-        {
-            if ((Environment.UserInteractive) || OSUtils.IsUnix)
-            {
+        private void ShowHelp() {
+            if ((Environment.UserInteractive) || OSUtils.IsUnix) {
                 //Console.WriteLine("345678901234567890123456789012345678901234567890123456789012345678901234567890");
                 Console.WriteLine();                                                                               //
                 Console.WriteLine("Usage: " + Path.GetFileName(ProcessUtils.ExecutablePath) + " [parameters]");    //
@@ -244,16 +210,12 @@ namespace RandM.fTelnetProxy
             }
         }
 
-        public void Start()
-        {
+        public void Start() {
             RMLog.Handler += RMLog_Handler;
 
-            try
-            {
+            try {
                 _LogStream = new FileStream(Path.ChangeExtension(ProcessUtils.ExecutablePath, ".log"), FileMode.Append, FileAccess.Write, FileShare.Read);
-            }
-            catch (Exception ex)
-            {
+            } catch (Exception ex) {
                 RMLog.Exception(ex, "Failed to open " + Path.ChangeExtension(ProcessUtils.ExecutablePath, ".log") + " for writing");
                 Environment.Exit(1);
             }
@@ -263,39 +225,30 @@ namespace RandM.fTelnetProxy
             Config.Default.Load();
             ParseCommandLineArgs();
 
-            if ((Config.Default.CertificateFilename != "") && File.Exists(Config.Default.CertificateFilename))
-            {
-                try
-                {
+            if ((Config.Default.CertificateFilename != "") && File.Exists(Config.Default.CertificateFilename)) {
+                try {
                     Config.Default.Certificate = new X509Certificate2(Config.Default.CertificateFilename, Config.Default.CertificatePassword);
-                }
-                catch (Exception ex)
-                {
+                } catch (Exception ex) {
                     RMLog.Exception(ex, "--Error loading cert file");
                 }
             }
 
-            try
-            {
+            try {
                 RMLog.Info("Starting WebSocket proxy thread");
                 _WebSocketServer = new WebSocketServerThread("0.0.0.0", Config.Default.ListenPort);
                 _WebSocketServer.Start();
-            }
-            catch (Exception ex)
-            {
+            } catch (Exception ex) {
                 RMLog.Exception(ex, "Failed to start WebSocket proxy thread");
                 Environment.Exit(1);
             }
         }
 
-        public void Stop()
-        {
+        public void Stop() {
             _Stopping = true;
 
             RMLog.Info("fTelnetProxy shutting down");
 
-            if (_WebSocketServer != null)
-            {
+            if (_WebSocketServer != null) {
                 RMLog.Info("Stopping WebSocket proxy thread");
                 _WebSocketServer.Stop();
                 _WebSocketServer.WaitFor();
@@ -303,8 +256,7 @@ namespace RandM.fTelnetProxy
 
             RMLog.Info("fTelnetProxy terminated");
 
-            if (_LogStream != null)
-            {
+            if (_LogStream != null) {
                 _LogStream.WriteByte(0x0D);
                 _LogStream.WriteByte(0x0A);
                 _LogStream.WriteByte(0x0D);

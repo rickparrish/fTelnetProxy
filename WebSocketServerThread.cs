@@ -6,10 +6,8 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 
-namespace RandM.fTelnetProxy
-{
-    public class WebSocketServerThread : RMThread
-    {
+namespace RandM.fTelnetProxy {
+    public class WebSocketServerThread : RMThread {
         private string _Address;
         private int _ClientThreadCounter = 0;
         private List<WebSocketClientThread> _ClientThreads = new List<WebSocketClientThread>();
@@ -17,73 +15,52 @@ namespace RandM.fTelnetProxy
         private int _Port;
         private WebSocketConnection _Server;
 
-        public WebSocketServerThread(string address, int port)
-        {
+        public WebSocketServerThread(string address, int port) {
             _Address = address;
             _Port = port;
         }
 
-        public int ClientConnectionCount
-        {
-            get
-            {
-                lock (_ClientThreadsLock)
-                {
+        public int ClientConnectionCount {
+            get {
+                lock (_ClientThreadsLock) {
                     return _ClientThreads.Count;
                 }
             }
         }
 
-        void ClientThread_FinishEvent(object sender, EventArgs e)
-        {
-            lock (_ClientThreadsLock)
-            {
-                if ((sender is WebSocketClientThread) && _ClientThreads.Contains((WebSocketClientThread)sender))
-                {
+        void ClientThread_FinishEvent(object sender, EventArgs e) {
+            lock (_ClientThreadsLock) {
+                if ((sender is WebSocketClientThread) && _ClientThreads.Contains((WebSocketClientThread)sender)) {
                     _ClientThreads.Remove((WebSocketClientThread)sender);
                     RMLog.Info(_ClientThreads.Count.ToString() + " active connections");
                 }
             }
         }
 
-        protected override void Execute()
-        {
-            using (_Server = new WebSocketConnection())
-            {
-                if (_Server.Listen(_Address, _Port))
-                {
-                    using (FileStream LogStream = new FileStream(Path.Combine(ProcessUtils.StartupPath, "fTelnetProxy-Connections.log"), FileMode.Append, FileAccess.Write, FileShare.Read))
-                    {
-                        while (!_Stop)
-                        {
-                            try
-                            {
+        protected override void Execute() {
+            using (_Server = new WebSocketConnection()) {
+                if (_Server.Listen(_Address, _Port)) {
+                    using (FileStream LogStream = new FileStream(Path.Combine(ProcessUtils.StartupPath, "fTelnetProxy-Connections.log"), FileMode.Append, FileAccess.Write, FileShare.Read)) {
+                        while (!_Stop) {
+                            try {
                                 // Accept an incoming connection
                                 if (_Server.CanAccept(500)) // 1/2 of a second
                                 {
                                     Socket NewSocket = _Server.Accept();
-                                    if (NewSocket != null)
-                                    {
+                                    if (NewSocket != null) {
                                         WebSocketConnection NewConnection = new WebSocketConnection(true, Config.Default.Certificate);
-                                        if (NewConnection.Open(NewSocket))
-                                        {
-                                            if (NewConnection.Header["Path"] == "/ping")
-                                            {
+                                        if (NewConnection.Open(NewSocket)) {
+                                            if (NewConnection.Header["Path"] == "/ping") {
                                                 // Handle ping requests (from proxy.ftelnet.ca most likely)
                                                 string Ping = NewConnection.ReadLn(1000);
-                                                if (NewConnection.ReadTimedOut)
-                                                {
+                                                if (NewConnection.ReadTimedOut) {
                                                     RMLog.Debug("Answering a /ping (no time received) from " + NewConnection.GetRemoteIP() + ":" + NewConnection.GetRemotePort());
-                                                }
-                                                else
-                                                {
+                                                } else {
                                                     RMLog.Debug("Answering a /ping (" + Ping + ") from " + NewConnection.GetRemoteIP() + ":" + NewConnection.GetRemotePort());
                                                     NewConnection.Write(Ping);
                                                 }
                                                 NewConnection.Close();
-                                            }
-                                            else
-                                            {
+                                            } else {
                                                 // Handle normal connection
                                                 _ClientThreadCounter += 1;
                                                 RMLog.Info("{" + _ClientThreadCounter.ToString() + "} Connection accepted from " + NewConnection.GetRemoteIP() + ":" + NewConnection.GetRemotePort());
@@ -101,66 +78,51 @@ namespace RandM.fTelnetProxy
 
                                                 WebSocketClientThread ClientThread = new WebSocketClientThread(NewConnection, _ClientThreadCounter);
                                                 ClientThread.FinishEvent += ClientThread_FinishEvent;
-                                                lock (_ClientThreadsLock)
-                                                {
+                                                lock (_ClientThreadsLock) {
                                                     _ClientThreads.Add(ClientThread);
                                                     RMLog.Info(_ClientThreads.Count.ToString() + " active connections");
                                                 }
                                                 ClientThread.Start();
                                             }
-                                        }
-                                        else
-                                        {
-                                            if (NewConnection.FlashPolicyFileRequest)
-                                            {
+                                        } else {
+                                            if (NewConnection.FlashPolicyFileRequest) {
                                                 RMLog.Info("Answered flash policy file request from " + NewConnection.GetRemoteIP() + ":" + NewConnection.GetRemotePort().ToString());
-                                            }
-                                            else
-                                            {
+                                            } else {
                                                 RMLog.Trace("Invalid WebSocket connection from " + NewConnection.GetRemoteIP() + ":" + NewConnection.GetRemotePort().ToString());
                                             }
                                             NewConnection.Close();
                                         }
                                     }
                                 }
-                            }
-                            catch (Exception ex)
-                            {
+                            } catch (Exception ex) {
                                 RMLog.Exception(ex, "Unable to accept new websocket connection");
                             }
                         }
 
                         // Stop client threads
                         int ClientThreadCount = 0;
-                        lock (_ClientThreadsLock)
-                        {
-                            foreach (var ClientThread in _ClientThreads)
-                            {
+                        lock (_ClientThreadsLock) {
+                            foreach (var ClientThread in _ClientThreads) {
                                 if (ClientThread != null) ClientThread.Stop();
                             }
                             ClientThreadCount = _ClientThreads.Count;
                         }
 
                         // Wait for client threads
-                        while (ClientThreadCount > 0)
-                        {
-                            lock (_ClientThreadsLock)
-                            {
+                        while (ClientThreadCount > 0) {
+                            lock (_ClientThreadsLock) {
                                 ClientThreadCount = _ClientThreads.Count;
                             }
                             Thread.Sleep(100);
                         }
                     }
-                }
-                else
-                {
+                } else {
                     RMLog.Error("WebSocket Server Thread: Unable to listen on " + _Address + ":" + _Port);
                 }
             }
         }
 
-        public override void Stop()
-        {
+        public override void Stop() {
             // Close the socket so that any waits on ReadLn(), ReadChar(), etc, will not block
             if (_Server != null) _Server.Close();
 

@@ -5,27 +5,20 @@ using System.Reflection;
 using System.ServiceProcess;
 using System.Threading;
 
-namespace RandM.fTelnetProxy
-{
-    static class Program
-    {
+namespace RandM.fTelnetProxy {
+    static class Program {
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
-        static void Main(string[] args)
-        {
+        static void Main(string[] args) {
             // Check for service mode or console mode
-            if ((Environment.UserInteractive) || OSUtils.IsUnix)
-            {
+            if ((Environment.UserInteractive) || OSUtils.IsUnix) {
                 // Console mode, check for arguments
-                if (args.Length > 0)
-                {
-                    try
-                    {
+                if (args.Length > 0) {
+                    try {
                         // Check entire parameter string for service install or uninstall request
                         string ParameterString = string.Concat(args).TrimStart('/').TrimStart('-');
-                        switch (ParameterString)
-                        {
+                        switch (ParameterString) {
                             case "i":
                             case "install":
                                 Console.WriteLine("Installing service...");
@@ -39,37 +32,27 @@ namespace RandM.fTelnetProxy
                                 Console.WriteLine("Service uninstalled successfully!");
                                 return;
                         }
-                    }
-                    catch (Exception ex)
-                    {
+                    } catch (Exception ex) {
                         Console.WriteLine("Error handling service request: " + ex.Message);
                         return;
                     }
                 }
 
                 // If we get here, we're running as console app
-                using (var fTelnetProxy = new fTelnetProxy())
-                {
+                using (var fTelnetProxy = new fTelnetProxy()) {
                     fTelnetProxy.Start();
 
                     Console.WriteLine("Press Q to Quit...");
 
-                    while (true)
-                    {
-                        if (Console.KeyAvailable)
-                        {
-                            if (Console.ReadKey(true).Key == ConsoleKey.Q)
-                            {
+                    while (true) {
+                        if (Console.KeyAvailable) {
+                            if (Console.ReadKey(true).Key == ConsoleKey.Q) {
                                 break;
-                            }
-                            else
-                            {
+                            } else {
                                 Console.WriteLine(fTelnetProxy.ClientConnectionCount.ToString() + " active connections");
                                 Console.WriteLine("Press Q to Quit...");
                             }
-                        }
-                        else
-                        {
+                        } else {
                             Thread.Sleep(100);
                         }
                     }
@@ -78,12 +61,9 @@ namespace RandM.fTelnetProxy
 
                     fTelnetProxy.Stop();
                 }
-            }
-            else
-            {
+            } else {
                 // Service mode
-                using (var fTelnetProxyService = new Service())
-                {
+                using (var fTelnetProxyService = new Service()) {
                     ServiceBase.Run(fTelnetProxyService);
                 }
             }
