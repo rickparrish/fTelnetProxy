@@ -10,6 +10,7 @@ namespace RandM.fTelnetProxy {
         public int ListenPort { get; set; }
         public LogLevel LogLevel { get; set; }
         public string RelayFilename { get; set; }
+        public int RLoginPort { get; set; }
         public string TargetHostname { get; set; }
         public int TargetPort { get; set; }
 
@@ -23,6 +24,7 @@ namespace RandM.fTelnetProxy {
             ListenPort = 80; // TODOX ip6tables doesn't support port forwarding, so might need option to listen on multiple ports
             LogLevel = LogLevel.Info;
             RelayFilename = "";
+            RLoginPort = 513;
             TargetHostname = "localhost";
             TargetPort = 23;
         }
@@ -38,7 +40,16 @@ namespace RandM.fTelnetProxy {
             // Output the settings being used
             RMLog.Info("Using settings from " + base.FileName);
             RMLog.Info("-Listen port...." + ListenPort.ToString());
-            RMLog.Info("-Target server.." + TargetHostname + ":" + TargetPort.ToString());
+            if (TargetPort > 0) {
+                RMLog.Info("-Telnet target.." + TargetHostname + ":" + TargetPort.ToString());
+            } else {
+                RMLog.Info("-Telnet target..DISABLED");
+            }
+            if (RLoginPort > 0) {
+                RMLog.Info("-RLogin target.." + TargetHostname + ":" + RLoginPort.ToString());
+            } else {
+                RMLog.Info("-RLogin target..DISABLED");
+            }
             RMLog.Info("-Log level......" + LogLevel.ToString());
             if (CertificateFilename != "") {
                 // If file doesn't exist, and it's relative, convert to absolute
@@ -57,7 +68,6 @@ namespace RandM.fTelnetProxy {
                     RMLog.Error("-Cert file not found: '" + CertificateFilename + "'");
                     CertificateFilename = "";
                 }
-
             }
             if (RelayFilename != "") {
                 // If file doesn't exist, and it's relative, convert to absolute

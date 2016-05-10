@@ -25,12 +25,15 @@ namespace RandM.fTelnetProxy {
                 if (_WebSocketConnection.Header["Path"] != "/") {
                     bool CanRelay = false;
 
-                    // Check if program has relaying enabled
-                    if (!string.IsNullOrEmpty(Config.Default.RelayFilename)) {
-                        string[] HostAndPort = _WebSocketConnection.Header["Path"].Split('/');
-                        if ((HostAndPort.Length == 3) && (int.TryParse(HostAndPort[2], out Port))) {
-                            Hostname = HostAndPort[1];
-
+                    // Extract the requested host and port
+                    string[] HostAndPort = _WebSocketConnection.Header["Path"].Split('/');
+                    if ((HostAndPort.Length == 3) && (int.TryParse(HostAndPort[2], out Port))) {
+                        Hostname = HostAndPort[1];
+                        if (Config.Default.TargetHostname.ToLower().Trim() == Hostname.ToLower().Trim()) {
+                            // User is requesting the target defined by the proxy admin, so check if it's to an allowed port
+                            CanRelay = ((Port > 0) && (Port == Config.Default.TargetPort) || (Port == Config.Default.RLoginPort));
+                        } else if (!string.IsNullOrEmpty(Config.Default.RelayFilename)) {
+                            // proxy admin has relaying enabled, so check against the relay.cfg file
                             try {
                                 // Read relay file
                                 if (File.Exists(Config.Default.RelayFilename)) {

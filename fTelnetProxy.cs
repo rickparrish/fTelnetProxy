@@ -121,7 +121,24 @@ namespace RandM.fTelnetProxy {
                                 Config.Default.RelayFilename = Args[i];
                                 RMLog.Info("-Relay file....." + Config.Default.RelayFilename);
                             } else {
+                                Config.Default.RelayFilename = "";
                                 RMLog.Error("-Relay file not found: '" + Args[i] + "'");
+                            }
+                            break;
+
+                        case "rp":
+                        case "rlogin-port":
+                            i += 1;
+                            try {
+                                Config.Default.RLoginPort = Convert.ToInt16(Args[i]);
+                                if (Config.Default.RLoginPort > 0) {
+                                    // TODOX If -rp is specified before -t, then this will display the wrong hostname
+                                    RMLog.Info("-RLogin target.." + Config.Default.TargetHostname + ":" + Config.Default.RLoginPort.ToString());
+                                } else {
+                                    RMLog.Info("-RLogin target..DISABLED");
+                                }
+                            } catch (Exception ex) {
+                                RMLog.Exception(ex, "-Invalid port: '" + Args[i] + "'");
                             }
                             break;
 
@@ -133,7 +150,11 @@ namespace RandM.fTelnetProxy {
                             WebUtils.ParseHostPort(Args[i], ref TargetHostname, ref TargetPort);
                             Config.Default.TargetHostname = TargetHostname;
                             Config.Default.TargetPort = TargetPort;
-                            RMLog.Info("-Target server.." + Config.Default.TargetHostname + ":" + Config.Default.TargetPort.ToString());
+                            if (Config.Default.TargetPort > 0) {
+                                RMLog.Info("-Telnet target.." + Config.Default.TargetHostname + ":" + Config.Default.TargetPort.ToString());
+                            } else {
+                                RMLog.Info("-Telnet target..DISABLED");
+                            }
                             break;
 
                         default:
@@ -193,6 +214,11 @@ namespace RandM.fTelnetProxy {
                 Console.WriteLine();                                                                               //
                 Console.WriteLine("  -t <host:port>             Telnet server to redirect to");                    //
                 Console.WriteLine("  --target <host:port>       Default is localhost:23");                         //
+                Console.WriteLine("                             Use port 0 to disable telnet (ie localhost:0)");   //
+                Console.WriteLine();                                                                               //
+                Console.WriteLine("  -rp <port>                 RLogin port to redirect to");                      //
+                Console.WriteLine("  --rlogn-port <port>        Default is 513");                                  //
+                Console.WriteLine("  --rlogn-port <port>        Use port 0 to disable rlogin (ie -rp 0)");         //
                 Console.WriteLine();                                                                               //
                 Console.WriteLine("  -c <filename>              PKCS12 file containing private key + cert chain"); //
                 Console.WriteLine("  --cert <filename>          Needed if your site uses https://");               //
