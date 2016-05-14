@@ -1,6 +1,8 @@
 ﻿using RandM.RMLib;
 using System;
+using System.Collections;
 using System.IO;
+using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 
@@ -17,13 +19,13 @@ namespace RandM.fTelnetProxy {
         protected virtual void Dispose(bool disposing) {
             if (!disposedValue) {
                 if (disposing) {
-                    // TODO: dispose managed state (managed objects).
+                    // dispose managed state (managed objects).
                     if (!_Stopping) Stop();
                     if (_WebSocketServer != null) _WebSocketServer.Dispose();
                 }
 
-                // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
-                // TODO: set large fields to null.
+                // free unmanaged resources (unmanaged objects)
+                // set large fields to null.
 
                 disposedValue = true;
             }
@@ -48,6 +50,7 @@ namespace RandM.fTelnetProxy {
             }
         }
 
+        // TODOY Consolidate with ParseEnvironmentVariables
         private void ParseCommandLineArgs() {
             string[] Args = Environment.GetCommandLineArgs();
             if (Args.Length > 1) {
@@ -165,6 +168,111 @@ namespace RandM.fTelnetProxy {
             }
         }
 
+        // TODOY Consolidate with ParseCommandLine
+        private void ParseEnvironmentVariables() {
+            var EnvironmentVariables = Environment.GetEnvironmentVariables().Cast<DictionaryEntry>().Where(x => x.Key.ToString().ToLower().StartsWith("ftelnet_")).ToArray();
+            if (EnvironmentVariables.Length > 0) {
+                RMLog.Info("Overriding with settings from environment variables");
+
+                for (int i = 0; i < EnvironmentVariables.Length; i++) {
+                    string Arg = EnvironmentVariables[i].Key.ToString().Substring(8).ToLower().Replace('_', '-'); // Substring off the leading ftelnet_ and replace _ with -
+                    string Value = EnvironmentVariables[i].Value.ToString();
+
+                    switch (Arg) {
+                        case "c":
+                        case "cert":
+                            // If file doesn't exist, and it's relative, convert to absolute
+                            if (!File.Exists(Value) && !Path.IsPathRooted(Value)) {
+                                Value = StringUtils.PathCombine(ProcessUtils.StartupPath, Value);
+                            }
+
+                            if (File.Exists(Value)) {
+                                Config.Default.CertificateFilename = Value;
+                                RMLog.Info("-Cert file......" + Config.Default.CertificateFilename);
+                            } else {
+                                RMLog.Error("-Cert file not found: '" + Value + "'");
+                            }
+                            break;
+
+                        case "l":
+                        case "loglevel":
+                            try {
+                                RMLog.Level = (LogLevel)Enum.Parse(typeof(LogLevel), Value);
+                                RMLog.Info("-Log level......" + RMLog.Level.ToString());
+                            } catch (Exception ex) {
+                                RMLog.Exception(ex, "-Invalid log level: '" + Value + "'");
+                            }
+                            break;
+
+                        case "p":
+                        case "port":
+                            try {
+                                Config.Default.ListenPort = Convert.ToInt16(Value);
+                                RMLog.Info("-Listen port...." + Config.Default.ListenPort.ToString());
+                            } catch (Exception ex) {
+                                RMLog.Exception(ex, "-Invalid port: '" + Value + "'");
+                            }
+                            break;
+
+                        case "pw":
+                        case "password":
+                            Config.Default.CertificatePassword = Value;
+                            RMLog.Info("-Cert password..yes (hidden)");
+                            break;
+
+                        case "r":
+                        case "relay":
+                            // If file doesn't exist, and it's relative, convert to absolute
+                            if (!File.Exists(Value) && !Path.IsPathRooted(Value)) {
+                                Value = StringUtils.PathCombine(ProcessUtils.StartupPath, Value);
+                            }
+
+                            if (File.Exists(Value)) {
+                                Config.Default.RelayFilename = Value;
+                                RMLog.Info("-Relay file....." + Config.Default.RelayFilename);
+                            } else {
+                                Config.Default.RelayFilename = "";
+                                RMLog.Error("-Relay file not found: '" + Value + "'");
+                            }
+                            break;
+
+                        case "rp":
+                        case "rlogin-port":
+                            try {
+                                Config.Default.RLoginPort = Convert.ToInt16(Value);
+                                if (Config.Default.RLoginPort > 0) {
+                                    // TODOX If -rp is specified before -t, then this will display the wrong hostname
+                                    RMLog.Info("-RLogin target.." + Config.Default.TargetHostname + ":" + Config.Default.RLoginPort.ToString());
+                                } else {
+                                    RMLog.Info("-RLogin target..DISABLED");
+                                }
+                            } catch (Exception ex) {
+                                RMLog.Exception(ex, "-Invalid port: '" + Value + "'");
+                            }
+                            break;
+
+                        case "t":
+                        case "target":
+                            string TargetHostname = Config.Default.TargetHostname;
+                            int TargetPort = Config.Default.TargetPort;
+                            WebUtils.ParseHostPort(Value, ref TargetHostname, ref TargetPort);
+                            Config.Default.TargetHostname = TargetHostname;
+                            Config.Default.TargetPort = TargetPort;
+                            if (Config.Default.TargetPort > 0) {
+                                RMLog.Info("-Telnet target.." + Config.Default.TargetHostname + ":" + Config.Default.TargetPort.ToString());
+                            } else {
+                                RMLog.Info("-Telnet target..DISABLED");
+                            }
+                            break;
+
+                        default:
+                            RMLog.Error("-Unknown parameter: '" + Arg + "'");
+                            break;
+                    }
+                }
+            }
+        }
+
         void RMLog_Handler(object sender, RMLogEventArgs e) {
             string Message = string.Format("[{0}] [{1}] {2}\r\n",
                 DateTime.Now.ToString(),
@@ -249,6 +357,7 @@ namespace RandM.fTelnetProxy {
             RMLog.Info("fTelnetProxy Starting Up");
 
             Config.Default.Load();
+            ParseEnvironmentVariables();
             ParseCommandLineArgs();
 
             if ((Config.Default.CertificateFilename != "") && File.Exists(Config.Default.CertificateFilename)) {
