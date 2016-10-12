@@ -4,29 +4,67 @@ using System.IO;
 using System.Reflection;
 using System.Text;
 using System.Threading;
+using System.Net.Sockets;
 
 namespace RandM.fTelnetProxy {
     public class WebSocketClientThread : RMThread {
         private int _ConnectionId = 0;
-        private WebSocketConnection _WebSocketConnection = null;
+        private Socket _Socket = null;
 
-        public WebSocketClientThread(WebSocketConnection connection, int connectionId) {
-            _WebSocketConnection = connection;
+        public WebSocketClientThread(Socket socket, int connectionId) {
+            _Socket = socket;
             _ConnectionId = connectionId;
         }
 
         protected override void Execute() {
-            using (_WebSocketConnection) {
+            WebSocketConnection NewConnection = new WebSocketConnection(true, Config.Default.Certificate);
+            if (NewConnection.Open(_Socket)) {
+                RMLog.Debug("{" + _ConnectionId.ToString() + "} Opened connection from " + NewConnection.GetRemoteIP() + ":" + NewConnection.GetRemotePort());
+                if (NewConnection.Header["Path"] == "/ping") {
+                    // Handle ping requests (from proxy.ftelnet.ca most likely)
+                    string Ping = NewConnection.ReadLn(1000);
+                    if (NewConnection.ReadTimedOut) {
+                        RMLog.Debug("Answering a /ping (no time received) from " + NewConnection.GetRemoteIP() + ":" + NewConnection.GetRemotePort());
+                    } else {
+                        RMLog.Debug("Answering a /ping (" + Ping + ") from " + NewConnection.GetRemoteIP() + ":" + NewConnection.GetRemotePort());
+                        NewConnection.Write(Ping);
+                    }
+                    NewConnection.Close();
+                    return;
+                }
+            } else {
+                if (NewConnection.FlashPolicyFileRequest) {
+                    RMLog.Info("{" + _ConnectionId.ToString() + "} Answered flash policy file request from " + NewConnection.GetRemoteIP() + ":" + NewConnection.GetRemotePort().ToString());
+                } else {
+                    RMLog.Debug("{" + _ConnectionId.ToString() + "} Invalid WebSocket connection from " + NewConnection.GetRemoteIP() + ":" + NewConnection.GetRemotePort().ToString());
+                }
+                NewConnection.Close();
+                return;
+            }
+
+            using (NewConnection) {
+                // Handle normal connection
+                RMLog.Info("{" + _ConnectionId.ToString() + "} Connection accepted from " + NewConnection.GetRemoteIP() + ":" + NewConnection.GetRemotePort());
+
+                string MessageText = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\r\n",
+                    DateTime.Now.ToString(),
+                    NewConnection.GetRemoteIP(),
+                    NewConnection.GetRemotePort(),
+                    NewConnection.Header["Path"],
+                    NewConnection.Protocol,
+                    NewConnection.SubProtocol);
+                FileUtils.FileAppendAllText(Path.Combine(ProcessUtils.StartupPath, "fTelnetProxy-Connections.log"), MessageText, Encoding.ASCII);
+
                 // Defaults for redirect location
                 string Hostname = Config.Default.TargetHostname;
                 int Port = Config.Default.TargetPort;
 
                 // Check if user is requesting a custom target
-                if (_WebSocketConnection.Header["Path"] != "/") {
+                if (NewConnection.Header["Path"] != "/") {
                     bool CanRelay = false;
 
                     // Extract the requested host and port
-                    string[] HostAndPort = _WebSocketConnection.Header["Path"].Split('/');
+                    string[] HostAndPort = NewConnection.Header["Path"].Split('/');
                     if ((HostAndPort.Length == 3) && (int.TryParse(HostAndPort[2], out Port))) {
                         Hostname = HostAndPort[1];
                         if (Config.Default.TargetHostname.ToLower().Trim() == Hostname.ToLower().Trim()) {
@@ -72,31 +110,31 @@ namespace RandM.fTelnetProxy {
 
                     if (!CanRelay) {
                         RMLog.Info("{" + _ConnectionId.ToString() + "} Rejecting request for " + Hostname + ":" + Port.ToString());
-                        _WebSocketConnection.WriteLn("Sorry, for security reasons this proxy won't connect to " + Hostname + ":" + Port.ToString());
+                        NewConnection.WriteLn("Sorry, for security reasons this proxy won't connect to " + Hostname + ":" + Port.ToString());
                         Thread.Sleep(2500);
                         return;
                     }
                 }
 
                 // Try to connect to the desired Host and Port
-                _WebSocketConnection.Write(Ansi.ClrScr() + "Connecting to " + Hostname + ":" + Port.ToString() + "...");
+                NewConnection.Write(Ansi.ClrScr() + "Connecting to " + Hostname + ":" + Port.ToString() + "...");
                 using (TcpConnection _TcpConnection = new TcpConnection()) {
                     if (_TcpConnection.Connect(Hostname, Port)) {
                         RMLog.Info("{" + _ConnectionId.ToString() + "} Connected to " + Hostname + ":" + Port.ToString());
-                        _WebSocketConnection.WriteLn("connected!");
+                        NewConnection.WriteLn("connected!");
 
                         // Repeatedly move data around until a connection is closed (or a stop is requested)
                         bool DoSleep = true;
-                        while (!_Stop && _WebSocketConnection.Connected && _TcpConnection.Connected) {
+                        while (!_Stop && NewConnection.Connected && _TcpConnection.Connected) {
                             DoSleep = true;
 
-                            if (_WebSocketConnection.CanRead()) {
-                                _TcpConnection.WriteBytes(_WebSocketConnection.ReadBytes());
+                            if (NewConnection.CanRead()) {
+                                _TcpConnection.WriteBytes(NewConnection.ReadBytes());
                                 DoSleep = false;
                             }
 
                             if (_TcpConnection.CanRead()) {
-                                _WebSocketConnection.WriteBytes(_TcpConnection.ReadBytes());
+                                NewConnection.WriteBytes(_TcpConnection.ReadBytes());
                                 DoSleep = false;
                             }
 
@@ -106,18 +144,18 @@ namespace RandM.fTelnetProxy {
                         // Check why we exited the loop
                         if (_Stop) {
                             RMLog.Info("{" + _ConnectionId.ToString() + "} Stop requested");
-                            _WebSocketConnection.Write(Ansi.GotoXY(1, 1) + Ansi.CursorDown(255) + "\r\nProxy server shutting down...");
+                            NewConnection.Write(Ansi.GotoXY(1, 1) + Ansi.CursorDown(255) + "\r\nProxy server shutting down...");
                             Thread.Sleep(2500);
-                        } else if (!_WebSocketConnection.Connected) {
+                        } else if (!NewConnection.Connected) {
                             RMLog.Info("{" + _ConnectionId.ToString() + "} Client closed connection");
                         } else if (!_TcpConnection.Connected) {
                             RMLog.Info("{" + _ConnectionId.ToString() + "} Server closed connection");
-                            _WebSocketConnection.Write(Ansi.GotoXY(1, 1) + Ansi.CursorDown(255) + "\r\nServer closed connection...");
+                            NewConnection.Write(Ansi.GotoXY(1, 1) + Ansi.CursorDown(255) + "\r\nServer closed connection...");
                             Thread.Sleep(2500);
                         }
                     } else {
                         RMLog.Info("{" + _ConnectionId.ToString() + "} Unable to connect to " + Hostname + ":" + Port.ToString());
-                        _WebSocketConnection.WriteLn("unable to connect!");
+                        NewConnection.WriteLn("unable to connect!");
                         Thread.Sleep(2500);
                     }
                 }
