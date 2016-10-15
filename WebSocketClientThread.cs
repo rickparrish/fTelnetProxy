@@ -16,34 +16,60 @@ namespace RandM.fTelnetProxy {
             _ConnectionId = connectionId;
         }
 
-        protected override void Execute() {
-            WebSocketConnection NewConnection = new WebSocketConnection(true, Config.Default.Certificate);
-            if (NewConnection.Open(_Socket)) {
-                RMLog.Debug("{" + _ConnectionId.ToString() + "} Opened connection from " + NewConnection.GetRemoteIP() + ":" + NewConnection.GetRemotePort());
-                if (NewConnection.Header["Path"] == "/ping") {
-                    // Handle ping requests (from proxy.ftelnet.ca most likely)
-                    string Ping = NewConnection.ReadLn(1000);
-                    if (NewConnection.ReadTimedOut) {
-                        RMLog.Debug("Answering a /ping (no time received) from " + NewConnection.GetRemoteIP() + ":" + NewConnection.GetRemotePort());
-                    } else {
-                        RMLog.Debug("Answering a /ping (" + Ping + ") from " + NewConnection.GetRemoteIP() + ":" + NewConnection.GetRemotePort());
-                        NewConnection.Write(Ping);
+        protected override void Dispose(bool disposing) {
+            if (!_Disposed) {
+                if (disposing) {
+                    // dispose managed state (managed objects).
+                    if (_Socket != null) {
+                        try {
+                            _Socket.Shutdown(SocketShutdown.Both);
+                        } catch {
+                            // Ignore on dispose
+                        }
+                        try {
+                            _Socket.Close();
+                        } catch {
+                            // Ignore on dispose
+                        }
+                        _Socket = null;
                     }
-                    NewConnection.Close();
+                }
+
+                // free unmanaged resources (unmanaged objects)
+                // set large fields to null.
+
+                // Call the base dispose
+                base.Dispose(disposing);
+            }
+        }
+
+        protected override void Execute() {
+            try {
+                // Handle non-proxy connections
+                WebSocketConnection NewConnection = new WebSocketConnection(true, Config.Default.Certificate);
+                if (NewConnection.Open(_Socket)) {
+                    RMLog.Debug("{" + _ConnectionId.ToString() + "} Opened connection from " + NewConnection.GetRemoteIP() + ":" + NewConnection.GetRemotePort());
+                    if (NewConnection.Header["Path"] == "/ping") {
+                        // Handle ping requests (from proxy.ftelnet.ca most likely)
+                        string Ping = NewConnection.ReadLn(1000);
+                        if (NewConnection.ReadTimedOut) {
+                            RMLog.Debug("Answering a /ping (no time received) from " + NewConnection.GetRemoteIP() + ":" + NewConnection.GetRemotePort());
+                        } else {
+                            RMLog.Debug("Answering a /ping (" + Ping + ") from " + NewConnection.GetRemoteIP() + ":" + NewConnection.GetRemotePort());
+                            NewConnection.Write(Ping);
+                        }
+                        return;
+                    }
+                } else {
+                    if (NewConnection.FlashPolicyFileRequest) {
+                        RMLog.Info("{" + _ConnectionId.ToString() + "} Answered flash policy file request from " + NewConnection.GetRemoteIP() + ":" + NewConnection.GetRemotePort().ToString());
+                    } else {
+                        RMLog.Debug("{" + _ConnectionId.ToString() + "} Invalid WebSocket connection from " + NewConnection.GetRemoteIP() + ":" + NewConnection.GetRemotePort().ToString());
+                    }
                     return;
                 }
-            } else {
-                if (NewConnection.FlashPolicyFileRequest) {
-                    RMLog.Info("{" + _ConnectionId.ToString() + "} Answered flash policy file request from " + NewConnection.GetRemoteIP() + ":" + NewConnection.GetRemotePort().ToString());
-                } else {
-                    RMLog.Debug("{" + _ConnectionId.ToString() + "} Invalid WebSocket connection from " + NewConnection.GetRemoteIP() + ":" + NewConnection.GetRemotePort().ToString());
-                }
-                NewConnection.Close();
-                return;
-            }
 
-            using (NewConnection) {
-                // Handle normal connection
+                // If we get here it's a proxy connection, so handle it
                 RMLog.Info("{" + _ConnectionId.ToString() + "} Connection accepted from " + NewConnection.GetRemoteIP() + ":" + NewConnection.GetRemotePort());
 
                 string MessageText = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\r\n",
@@ -159,6 +185,8 @@ namespace RandM.fTelnetProxy {
                         Thread.Sleep(2500);
                     }
                 }
+            } catch (Exception ex) {
+                RMLog.Exception(ex, "{" + _ConnectionId.ToString() + "} Exception in client thread");
             }
         }
     }

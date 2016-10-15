@@ -8,8 +8,8 @@ using System.Text;
 
 namespace RandM.fTelnetProxy {
     public class fTelnetProxy : IDisposable {
-        private FileStream _LogStream = null;
-        private object _LogStreamLock = new object();
+        private string _LogFilename = Path.ChangeExtension(ProcessUtils.ExecutablePath, ".log");
+        private object _LogLock = new object();
         private bool _Stopping = false;
         private WebSocketServerThread _WebSocketServer = null;
 
@@ -274,17 +274,14 @@ namespace RandM.fTelnetProxy {
         }
 
         void RMLog_Handler(object sender, RMLogEventArgs e) {
-            string Message = string.Format("[{0}] [{1}] {2}\r\n",
+            string Message = string.Format("[{0}] [{1}] {2}{3}",
                 DateTime.Now.ToString(),
                 e.Level.ToString(),
-                e.Message);
+                e.Message,
+                Environment.NewLine);
 
-            lock (_LogStreamLock) {
-                if (_LogStream != null) {
-                    byte[] MessageBytes = Encoding.ASCII.GetBytes(Message);
-                    _LogStream.Write(MessageBytes, 0, MessageBytes.Length);
-                    _LogStream.Flush();
-                }
+            lock (_LogLock) {
+                FileUtils.FileAppendAllText(_LogFilename, Message);
 
                 if ((Environment.UserInteractive) || OSUtils.IsUnix) {
                     switch (e.Level) {
@@ -347,13 +344,6 @@ namespace RandM.fTelnetProxy {
         public void Start() {
             RMLog.Handler += RMLog_Handler;
 
-            try {
-                _LogStream = new FileStream(Path.ChangeExtension(ProcessUtils.ExecutablePath, ".log"), FileMode.Append, FileAccess.Write, FileShare.Read);
-            } catch (Exception ex) {
-                RMLog.Exception(ex, "Failed to open " + Path.ChangeExtension(ProcessUtils.ExecutablePath, ".log") + " for writing");
-                Environment.Exit(1);
-            }
-
             RMLog.Info("fTelnetProxy Starting Up");
 
             Config.Default.Load();
@@ -391,14 +381,7 @@ namespace RandM.fTelnetProxy {
 
             RMLog.Info("fTelnetProxy terminated");
 
-            if (_LogStream != null) {
-                _LogStream.WriteByte(0x0D);
-                _LogStream.WriteByte(0x0A);
-                _LogStream.WriteByte(0x0D);
-                _LogStream.WriteByte(0x0A);
-                _LogStream.Close();
-                _LogStream.Dispose();
-            }
+            FileUtils.FileAppendAllText(_LogFilename, Environment.NewLine + Environment.NewLine);
         }
     }
 }
