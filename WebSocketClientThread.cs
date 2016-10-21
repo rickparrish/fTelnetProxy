@@ -114,9 +114,9 @@ namespace RandM.fTelnetProxy {
 
                                         // Not a whitelisted port, check for a whitelisted host
                                         if (!CanRelay) {
-                                            string RequestedHostPort = Hostname + ":" + Port.ToString();
+                                            string RequestedHostPort = Hostname.ToLower() + ":" + Port.ToString();
                                             foreach (string AllowedHost in AllowedHosts) {
-                                                if (AllowedHost.Trim() == RequestedHostPort) {
+                                                if (AllowedHost.Trim().ToLower() == RequestedHostPort) {
                                                     CanRelay = true;
                                                     break;
                                                 }
