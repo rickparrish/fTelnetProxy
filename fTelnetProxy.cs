@@ -50,6 +50,10 @@ namespace RandM.fTelnetProxy {
             }
         }
 
+        public void DisplayActiveConnections() {
+            _WebSocketServer.DisplayActiveConnections();
+        }
+
         // TODOY Consolidate with ParseEnvironmentVariables
         private void ParseCommandLineArgs() {
             string[] Args = Environment.GetCommandLineArgs();

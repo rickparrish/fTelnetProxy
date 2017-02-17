@@ -42,15 +42,18 @@ namespace RandM.fTelnetProxy {
                 using (var fTelnetProxy = new fTelnetProxy()) {
                     fTelnetProxy.Start();
 
-                    Console.WriteLine("Press Q to Quit...");
+                    Console.WriteLine("Press A for Active Connections or Q to Quit...");
 
                     while (true) {
                         if (Console.KeyAvailable) {
-                            if (Console.ReadKey(true).Key == ConsoleKey.Q) {
+                            var Ch = Console.ReadKey(true).Key;
+                            if (Ch == ConsoleKey.A) {
+                                fTelnetProxy.DisplayActiveConnections();
+                            } else if (Ch == ConsoleKey.Q) {
                                 break;
                             } else {
                                 Console.WriteLine(fTelnetProxy.ClientConnectionCount.ToString() + " active connections");
-                                Console.WriteLine("Press Q to Quit...");
+                                Console.WriteLine("Press A for Active Connections or Q to Quit...");
                             }
                         } else {
                             Thread.Sleep(100);

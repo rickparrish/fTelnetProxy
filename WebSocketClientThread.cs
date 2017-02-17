@@ -5,10 +5,15 @@ using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Net.Sockets;
+using System.Net;
 
 namespace RandM.fTelnetProxy {
     public class WebSocketClientThread : RMThread {
         private int _ConnectionId = 0;
+        private DateTime _DateConnected = DateTime.Now;
+        private DateTime _DateLastKeypress = DateTime.Now;
+        private string _Hostname = "no_hostname_yet";
+        private int _Port = 0;
         private Socket _Socket = null;
 
         public WebSocketClientThread(Socket socket, int connectionId) {
@@ -30,59 +35,63 @@ namespace RandM.fTelnetProxy {
             }
         }
 
+        public void DisplayConnectionInformation() {
+            RMLog.Info($"[{_ConnectionId}] {((IPEndPoint)_Socket.RemoteEndPoint).Address.ToString()} -> {_Hostname}:{_Port} (connected: {Math.Round(DateTime.Now.Subtract(_DateConnected).TotalMinutes, 1)}min, idle: {Math.Floor(DateTime.Now.Subtract(_DateLastKeypress).TotalSeconds)}sec)");
+        }
+
         protected override void Execute() {
             try {
                 // Handle non-proxy connections
-                using (WebSocketConnection NewConnection = new WebSocketConnection(true, Config.Default.Certificate)) {
-                    if (NewConnection.Open(_Socket)) {
-                        RMLog.Debug("{" + _ConnectionId.ToString() + "} Opened connection from " + NewConnection.GetRemoteIP() + ":" + NewConnection.GetRemotePort());
-                        if (NewConnection.Header["Path"] == "/ping") {
+                using (WebSocketConnection UserConnection = new WebSocketConnection(true, Config.Default.Certificate)) {
+                    if (UserConnection.Open(_Socket)) {
+                        RMLog.Debug("{" + _ConnectionId.ToString() + "} Opened connection from " + UserConnection.GetRemoteIP() + ":" + UserConnection.GetRemotePort());
+                        if (UserConnection.Header["Path"] == "/ping") {
                             // Handle ping requests (from proxy.ftelnet.ca most likely)
-                            string Ping = NewConnection.ReadLn(1000);
-                            if (NewConnection.ReadTimedOut) {
-                                RMLog.Debug("Answering a /ping (no time received) from " + NewConnection.GetRemoteIP() + ":" + NewConnection.GetRemotePort());
+                            string Ping = UserConnection.ReadLn(1000);
+                            if (UserConnection.ReadTimedOut) {
+                                RMLog.Debug("Answering a /ping (no time received) from " + UserConnection.GetRemoteIP() + ":" + UserConnection.GetRemotePort());
                             } else {
-                                RMLog.Debug("Answering a /ping (" + Ping + ") from " + NewConnection.GetRemoteIP() + ":" + NewConnection.GetRemotePort());
-                                NewConnection.Write(Ping);
+                                RMLog.Debug("Answering a /ping (" + Ping + ") from " + UserConnection.GetRemoteIP() + ":" + UserConnection.GetRemotePort());
+                                UserConnection.Write(Ping);
                             }
                             return;
                         }
                     } else {
-                        if (NewConnection.FlashPolicyFileRequest) {
-                            RMLog.Info("{" + _ConnectionId.ToString() + "} Answered flash policy file request from " + NewConnection.GetRemoteIP() + ":" + NewConnection.GetRemotePort().ToString());
+                        if (UserConnection.FlashPolicyFileRequest) {
+                            RMLog.Info("{" + _ConnectionId.ToString() + "} Answered flash policy file request from " + UserConnection.GetRemoteIP() + ":" + UserConnection.GetRemotePort().ToString());
                         } else {
-                            RMLog.Debug("{" + _ConnectionId.ToString() + "} Invalid WebSocket connection from " + NewConnection.GetRemoteIP() + ":" + NewConnection.GetRemotePort().ToString());
+                            RMLog.Debug("{" + _ConnectionId.ToString() + "} Invalid WebSocket connection from " + UserConnection.GetRemoteIP() + ":" + UserConnection.GetRemotePort().ToString());
                         }
                         return;
                     }
 
                     // If we get here it's a proxy connection, so handle it
-                    RMLog.Info("{" + _ConnectionId.ToString() + "} Connection accepted from " + NewConnection.GetRemoteIP() + ":" + NewConnection.GetRemotePort());
+                    RMLog.Info("{" + _ConnectionId.ToString() + "} Connection accepted from " + UserConnection.GetRemoteIP() + ":" + UserConnection.GetRemotePort());
 
                     string MessageText = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\r\n",
                         DateTime.Now.ToString(),
-                        NewConnection.GetRemoteIP(),
-                        NewConnection.GetRemotePort(),
-                        NewConnection.Header["Path"],
-                        NewConnection.Protocol,
-                        NewConnection.SubProtocol);
+                        UserConnection.GetRemoteIP(),
+                        UserConnection.GetRemotePort(),
+                        UserConnection.Header["Path"],
+                        UserConnection.Protocol,
+                        UserConnection.SubProtocol);
                     FileUtils.FileAppendAllText(Path.Combine(ProcessUtils.StartupPath, "fTelnetProxy-Connections.log"), MessageText, Encoding.ASCII);
 
                     // Defaults for redirect location
-                    string Hostname = Config.Default.TargetHostname;
-                    int Port = Config.Default.TargetPort;
+                    _Hostname = Config.Default.TargetHostname;
+                    _Port = Config.Default.TargetPort;
 
                     // Check if user is requesting a custom target
-                    if (NewConnection.Header["Path"] != "/") {
+                    if (UserConnection.Header["Path"] != "/") {
                         bool CanRelay = false;
 
                         // Extract the requested host and port
-                        string[] HostAndPort = NewConnection.Header["Path"].Split('/');
-                        if ((HostAndPort.Length == 3) && (int.TryParse(HostAndPort[2], out Port))) {
-                            Hostname = HostAndPort[1];
-                            if (Config.Default.TargetHostname.ToLower().Trim() == Hostname.ToLower().Trim()) {
+                        string[] HostAndPort = UserConnection.Header["Path"].Split('/');
+                        if ((HostAndPort.Length == 3) && (int.TryParse(HostAndPort[2], out _Port))) {
+                            _Hostname = HostAndPort[1];
+                            if (Config.Default.TargetHostname.ToLower().Trim() == _Hostname.ToLower().Trim()) {
                                 // User is requesting the target defined by the proxy admin, so check if it's to an allowed port
-                                CanRelay = ((Port > 0) && (Port == Config.Default.TargetPort) || (Port == Config.Default.RLoginPort));
+                                CanRelay = ((_Port > 0) && (_Port == Config.Default.TargetPort) || (_Port == Config.Default.RLoginPort));
                             } else if (!string.IsNullOrEmpty(Config.Default.RelayFilename)) {
                                 // proxy admin has relaying enabled, so check against the relay.cfg file
                                 try {
@@ -93,7 +102,7 @@ namespace RandM.fTelnetProxy {
                                             // Check for a whitelisted port
                                             string[] AllowedPorts = AllowedHosts[0].Split(',');
                                             foreach (string AllowedPort in AllowedPorts) {
-                                                if (AllowedPort == Port.ToString()) {
+                                                if (AllowedPort == _Port.ToString()) {
                                                     CanRelay = true;
                                                     break;
                                                 }
@@ -101,7 +110,7 @@ namespace RandM.fTelnetProxy {
 
                                             // Not a whitelisted port, check for a whitelisted host
                                             if (!CanRelay) {
-                                                string RequestedHostPort = Hostname.ToLower() + ":" + Port.ToString();
+                                                string RequestedHostPort = _Hostname.ToLower() + ":" + _Port.ToString();
                                                 foreach (string AllowedHost in AllowedHosts) {
                                                     if (AllowedHost.Trim().ToLower() == RequestedHostPort) {
                                                         CanRelay = true;
@@ -122,32 +131,33 @@ namespace RandM.fTelnetProxy {
                         }
 
                         if (!CanRelay) {
-                            RMLog.Info("{" + _ConnectionId.ToString() + "} Rejecting request for " + Hostname + ":" + Port.ToString());
-                            NewConnection.WriteLn("Sorry, for security reasons this proxy won't connect to " + Hostname + ":" + Port.ToString());
+                            RMLog.Info("{" + _ConnectionId.ToString() + "} Rejecting request for " + _Hostname + ":" + _Port.ToString());
+                            UserConnection.WriteLn("Sorry, for security reasons this proxy won't connect to " + _Hostname + ":" + _Port.ToString());
                             Thread.Sleep(2500);
                             return;
                         }
                     }
 
                     // Try to connect to the desired Host and Port
-                    NewConnection.Write(Ansi.ClrScr() + "Connecting to " + Hostname + ":" + Port.ToString() + "...");
-                    using (TcpConnection _TcpConnection = new TcpConnection()) {
-                        if (_TcpConnection.Connect(Hostname, Port)) {
-                            RMLog.Info("{" + _ConnectionId.ToString() + "} Connected to " + Hostname + ":" + Port.ToString());
-                            NewConnection.WriteLn("connected!");
+                    UserConnection.Write(Ansi.ClrScr() + "Connecting to " + _Hostname + ":" + _Port.ToString() + "...");
+                    using (TcpConnection ServerConnection = new TcpConnection()) {
+                        if (ServerConnection.Connect(_Hostname, _Port)) {
+                            RMLog.Info("{" + _ConnectionId.ToString() + "} Connected to " + _Hostname + ":" + _Port.ToString());
+                            UserConnection.WriteLn("connected!");
 
                             // Repeatedly move data around until a connection is closed (or a stop is requested)
                             bool DoSleep = true;
-                            while (!_Stop && NewConnection.Connected && _TcpConnection.Connected) {
+                            while (!_Stop && UserConnection.Connected && ServerConnection.Connected) {
                                 DoSleep = true;
 
-                                if (NewConnection.CanRead()) {
-                                    _TcpConnection.WriteBytes(NewConnection.ReadBytes());
+                                if (UserConnection.CanRead()) {
+                                    ServerConnection.WriteBytes(UserConnection.ReadBytes());
+                                    _DateLastKeypress = DateTime.Now;
                                     DoSleep = false;
                                 }
 
-                                if (_TcpConnection.CanRead()) {
-                                    NewConnection.WriteBytes(_TcpConnection.ReadBytes());
+                                if (ServerConnection.CanRead()) {
+                                    UserConnection.WriteBytes(ServerConnection.ReadBytes());
                                     DoSleep = false;
                                 }
 
@@ -157,18 +167,18 @@ namespace RandM.fTelnetProxy {
                             // Check why we exited the loop
                             if (_Stop) {
                                 RMLog.Info("{" + _ConnectionId.ToString() + "} Stop requested");
-                                NewConnection.Write(Ansi.GotoXY(1, 1) + Ansi.CursorDown(255) + "\r\nProxy server shutting down...");
+                                UserConnection.Write(Ansi.GotoXY(1, 1) + Ansi.CursorDown(255) + "\r\nProxy server shutting down...");
                                 Thread.Sleep(2500);
-                            } else if (!NewConnection.Connected) {
+                            } else if (!UserConnection.Connected) {
                                 RMLog.Info("{" + _ConnectionId.ToString() + "} Client closed connection");
-                            } else if (!_TcpConnection.Connected) {
+                            } else if (!ServerConnection.Connected) {
                                 RMLog.Info("{" + _ConnectionId.ToString() + "} Server closed connection");
-                                NewConnection.Write(Ansi.GotoXY(1, 1) + Ansi.CursorDown(255) + "\r\nServer closed connection...");
+                                UserConnection.Write(Ansi.GotoXY(1, 1) + Ansi.CursorDown(255) + "\r\nServer closed connection...");
                                 Thread.Sleep(2500);
                             }
                         } else {
-                            RMLog.Info("{" + _ConnectionId.ToString() + "} Unable to connect to " + Hostname + ":" + Port.ToString());
-                            NewConnection.WriteLn("unable to connect!");
+                            RMLog.Info("{" + _ConnectionId.ToString() + "} Unable to connect to " + _Hostname + ":" + _Port.ToString());
+                            UserConnection.WriteLn("unable to connect!");
                             Thread.Sleep(2500);
                         }
                     }

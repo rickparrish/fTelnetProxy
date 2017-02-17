@@ -43,6 +43,20 @@ namespace RandM.fTelnetProxy {
             }
         }
 
+        public void DisplayActiveConnections() {
+            lock (_ClientThreadsLock) {
+                foreach (var ClientThread in _ClientThreads) {
+                    if (ClientThread != null) {
+                        try {
+                            ClientThread.DisplayConnectionInformation();
+                        } catch (Exception ex) {
+                            RMLog.Exception(ex, "Error listing client thread details");
+                        }
+                    }
+                }
+            }
+        }
+
         protected override void Execute() {
             using (_Server = new WebSocketConnection()) {
                 if (_Server.Listen(_Address, _Port)) {
@@ -71,7 +85,9 @@ namespace RandM.fTelnetProxy {
                     int ClientThreadCount = 0;
                     lock (_ClientThreadsLock) {
                         foreach (var ClientThread in _ClientThreads) {
-                            if (ClientThread != null) ClientThread.Stop();
+                            if (ClientThread != null) {
+                                ClientThread.Stop();
+                            }
                         }
                         ClientThreadCount = _ClientThreads.Count;
                     }
@@ -91,7 +107,9 @@ namespace RandM.fTelnetProxy {
 
         public override void Stop() {
             // Close the socket so that any waits on ReadLn(), ReadChar(), etc, will not block
-            if (_Server != null) _Server.Close();
+            if (_Server != null) {
+                _Server.Close();
+            }
 
             base.Stop();
         }
