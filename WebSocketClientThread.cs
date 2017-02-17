@@ -11,7 +11,8 @@ namespace RandM.fTelnetProxy {
     public class WebSocketClientThread : RMThread {
         private int _ConnectionId = 0;
         private DateTime _DateConnected = DateTime.Now;
-        private DateTime _DateLastKeypress = DateTime.Now;
+        private DateTime _DateLastRX = DateTime.Now;
+        private DateTime _DateLastTX = DateTime.Now;
         private string _Hostname = "no_hostname_yet";
         private int _Port = 0;
         private Socket _Socket = null;
@@ -36,7 +37,7 @@ namespace RandM.fTelnetProxy {
         }
 
         public void DisplayConnectionInformation() {
-            RMLog.Info($"[{_ConnectionId}] {((IPEndPoint)_Socket.RemoteEndPoint).Address.ToString()} -> {_Hostname}:{_Port} (connected: {Math.Round(DateTime.Now.Subtract(_DateConnected).TotalMinutes, 1)}min, idle: {Math.Floor(DateTime.Now.Subtract(_DateLastKeypress).TotalSeconds)}sec)");
+            RMLog.Info($"[{_ConnectionId}] {((IPEndPoint)_Socket.RemoteEndPoint).Address.ToString()} -> {_Hostname}:{_Port} (connected: {Math.Round(SecondsSinceConnecting / 60.0, 1)}min, last_rx: {SecondsSinceLastRX}sec, last_tx: {SecondsSinceLastTX}sec)");
         }
 
         protected override void Execute() {
@@ -152,16 +153,41 @@ namespace RandM.fTelnetProxy {
 
                                 if (UserConnection.CanRead()) {
                                     ServerConnection.WriteBytes(UserConnection.ReadBytes());
-                                    _DateLastKeypress = DateTime.Now;
+                                    _DateLastTX = DateTime.Now;
                                     DoSleep = false;
                                 }
 
                                 if (ServerConnection.CanRead()) {
                                     UserConnection.WriteBytes(ServerConnection.ReadBytes());
+                                    _DateLastRX = DateTime.Now;
                                     DoSleep = false;
                                 }
 
-                                if (DoSleep) Thread.Sleep(1);
+                                if (DoSleep) {
+                                    Thread.Sleep(1);
+                                }
+
+                                // Check if we should abort due to idle times
+                                // TODOX Allow to be customized
+                                if (SecondsSinceLastRX > 600) {
+                                    // 10 minutes of no server activity
+                                    RMLog.Info("{" + _ConnectionId.ToString() + "} Disconnecting after 10 minutes of no activity from server");
+                                    UserConnection.Write(Ansi.GotoXY(1, 1) + Ansi.CursorDown(255) + "\r\nDisconnecting after 10 minutes of no activity from server...");
+                                    Thread.Sleep(2500);
+                                    break;
+                                } else if (SecondsSinceLastTX > 600) {
+                                    // 10 minutes of no user activity
+                                    RMLog.Info("{" + _ConnectionId.ToString() + "} Disconnecting after 10 minutes of no activity from user");
+                                    UserConnection.Write(Ansi.GotoXY(1, 1) + Ansi.CursorDown(255) + "\r\nDisconnecting after 10 minutes of no activity from user...");
+                                    Thread.Sleep(2500);
+                                    break;
+                                } else if (SecondsSinceConnecting > 21600) {
+                                    // 6 hours since connecting
+                                    RMLog.Info("{" + _ConnectionId.ToString() + "} Disconnecting after 6 hours");
+                                    UserConnection.Write(Ansi.GotoXY(1, 1) + Ansi.CursorDown(255) + "\r\nDisconnecting after 6 hours...");
+                                    Thread.Sleep(2500);
+                                    break;
+                                }
                             }
 
                             // Check why we exited the loop
@@ -185,6 +211,24 @@ namespace RandM.fTelnetProxy {
                 }
             } catch (Exception ex) {
                 RMLog.Exception(ex, "{" + _ConnectionId.ToString() + "} Exception in client thread");
+            }
+        }
+
+        private int SecondsSinceConnecting {
+            get {
+                return Convert.ToInt32(Math.Floor(DateTime.Now.Subtract(_DateConnected).TotalSeconds));
+            }
+        }
+
+        private int SecondsSinceLastRX {
+            get {
+                return Convert.ToInt32(Math.Floor(DateTime.Now.Subtract(_DateLastRX).TotalSeconds));
+            }
+        }
+
+        private int SecondsSinceLastTX {
+            get {
+                return Convert.ToInt32(Math.Floor(DateTime.Now.Subtract(_DateLastTX).TotalSeconds));
             }
         }
     }
