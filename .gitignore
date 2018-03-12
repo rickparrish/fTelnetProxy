@@ -1,3 +1,4 @@
+.vs/*
 bin/Debug/*
 bin/Release/*
 !bin/Release/fTelnetProxy.exe

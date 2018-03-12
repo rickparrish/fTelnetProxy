@@ -51,6 +51,7 @@ namespace RandM.fTelnetProxy {
         }
 
         public void DisplayActiveConnections() {
+            RMLog.Info($" - {_WebSocketServer.ClientConnectionCount} connections:");
             _WebSocketServer.DisplayActiveConnections();
         }
 

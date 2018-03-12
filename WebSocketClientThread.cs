@@ -7,6 +7,8 @@ using System.Threading;
 using System.Net.Sockets;
 using System.Net;
 
+// TODOX Maybe also track bandwidth usage and disconnect for that?
+// TODOX Sometimes threads are locking up and preventing the server from terminating.  Need to check lastrx and lasttx periodically and kill?
 namespace RandM.fTelnetProxy {
     public class WebSocketClientThread : RMThread {
         private int _ConnectionId = 0;
@@ -15,6 +17,7 @@ namespace RandM.fTelnetProxy {
         private DateTime _DateLastTX = DateTime.Now;
         private string _Hostname = "no_hostname_yet";
         private int _Port = 0;
+        private string _RemoteIP = "no_remote_ip";
         private Socket _Socket = null;
 
         public WebSocketClientThread(Socket socket, int connectionId) {
@@ -37,7 +40,7 @@ namespace RandM.fTelnetProxy {
         }
 
         public void DisplayConnectionInformation() {
-            RMLog.Info($"[{_ConnectionId}] {((IPEndPoint)_Socket.RemoteEndPoint).Address.ToString()} -> {_Hostname}:{_Port} (connected: {Math.Round(SecondsSinceConnecting / 60.0, 1)}min, last_rx: {SecondsSinceLastRX}sec, last_tx: {SecondsSinceLastTX}sec)");
+            RMLog.Info($"[{_ConnectionId}] {_RemoteIP} -> {_Hostname}:{_Port} (connected: {Math.Round(SecondsSinceConnecting / 60.0, 1)}min, last_rx: {SecondsSinceLastRX}sec, last_tx: {SecondsSinceLastTX}sec)");
         }
 
         protected override void Execute() {
@@ -45,6 +48,8 @@ namespace RandM.fTelnetProxy {
                 // Handle non-proxy connections
                 using (WebSocketConnection UserConnection = new WebSocketConnection(true, Config.Default.Certificate)) {
                     if (UserConnection.Open(_Socket)) {
+                        _RemoteIP = UserConnection.GetRemoteIP();
+
                         RMLog.Debug("{" + _ConnectionId.ToString() + "} Opened connection from " + UserConnection.GetRemoteIP() + ":" + UserConnection.GetRemotePort());
                         if (UserConnection.Header["Path"] == "/ping") {
                             // Handle ping requests (from proxy.ftelnet.ca most likely)
@@ -134,6 +139,9 @@ namespace RandM.fTelnetProxy {
                         if (!CanRelay) {
                             RMLog.Info("{" + _ConnectionId.ToString() + "} Rejecting request for " + _Hostname + ":" + _Port.ToString());
                             UserConnection.WriteLn("Sorry, for security reasons this proxy won't connect to " + _Hostname + ":" + _Port.ToString());
+                            UserConnection.WriteLn("unless you contact me via the contact form on www.fTelnet.ca.  Just let me");
+                            UserConnection.WriteLn("know the hostname and port you're trying to connect to, and I'll add it to");
+                            UserConnection.WriteLn("the whitelist for you.");
                             Thread.Sleep(2500);
                             return;
                         }
@@ -158,7 +166,7 @@ namespace RandM.fTelnetProxy {
                                 }
 
                                 if (ServerConnection.CanRead()) {
-                                    UserConnection.WriteBytes(ServerConnection.ReadBytes());
+                                    UserConnection.WriteBytes(ServerConnection.ReadBytes(1024)); // 1k at a time to allow non-stop screens to be aborted by user input
                                     _DateLastRX = DateTime.Now;
                                     DoSleep = false;
                                 }
@@ -208,6 +216,9 @@ namespace RandM.fTelnetProxy {
                             Thread.Sleep(2500);
                         }
                     }
+
+                    // Display info about the connection we're closing
+                    DisplayConnectionInformation();
                 }
             } catch (Exception ex) {
                 RMLog.Exception(ex, "{" + _ConnectionId.ToString() + "} Exception in client thread");
