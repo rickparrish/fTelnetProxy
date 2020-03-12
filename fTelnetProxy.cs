@@ -357,6 +357,11 @@ namespace RandM.fTelnetProxy {
 
             if ((Config.Default.CertificateFilename != "") && File.Exists(Config.Default.CertificateFilename)) {
                 try {
+                    if (OSUtils.IsUnix)
+                    {
+                        Environment.SetEnvironmentVariable("MONO_TLS_PROVIDER", "btls");
+                    }
+
                     Config.Default.Certificate = new X509Certificate2(Config.Default.CertificateFilename, Config.Default.CertificatePassword);
                 } catch (Exception ex) {
                     RMLog.Exception(ex, "--Error loading cert file");
