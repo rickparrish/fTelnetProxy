@@ -86,6 +86,9 @@
     <None Include="fTelnetProxy.ini">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Include="relay-denied.ans">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Include="relay.cfg">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

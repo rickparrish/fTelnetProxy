@@ -10,6 +10,7 @@ namespace RandM.fTelnetProxy {
         public int ListenPort { get; set; }
         public LogLevel LogLevel { get; set; }
         public string RelayFilename { get; set; }
+        public string RelayDeniedFilename { get; set; }
         public int RLoginPort { get; set; }
         public string TargetHostname { get; set; }
         public int TargetPort { get; set; }
@@ -23,6 +24,7 @@ namespace RandM.fTelnetProxy {
             CertificatePassword = "";
             ListenPort = 80; // TODOX ip6tables doesn't support port forwarding, so might need option to listen on multiple ports
             LogLevel = LogLevel.Info;
+            RelayDeniedFilename = "relay-denied.ans";
             RelayFilename = "";
             RLoginPort = 513;
             TargetHostname = "localhost";
@@ -80,6 +82,19 @@ namespace RandM.fTelnetProxy {
                 } else {
                     RMLog.Error("-Relay file not found: '" + RelayFilename + "'");
                     RelayFilename = "";
+                }
+            }
+            if (RelayDeniedFilename != "") {
+                // If file doesn't exist, and it's relative, convert to absolute
+                if (!File.Exists(RelayDeniedFilename) && !Path.IsPathRooted(RelayDeniedFilename)) {
+                    RelayDeniedFilename = StringUtils.PathCombine(ProcessUtils.StartupPath, RelayDeniedFilename);
+                }
+
+                if (File.Exists(RelayDeniedFilename)) {
+                    RMLog.Info("-Relay denied file....." + RelayDeniedFilename);
+                } else {
+                    RMLog.Error("-Relay denied file not found: '" + RelayDeniedFilename + "'");
+                    RelayDeniedFilename = "";
                 }
             }
         }

@@ -138,10 +138,16 @@ namespace RandM.fTelnetProxy {
 
                         if (!CanRelay) {
                             RMLog.Info("{" + _ConnectionId.ToString() + "} Rejecting request for " + _Hostname + ":" + _Port.ToString());
-                            UserConnection.WriteLn("Sorry, for security reasons this proxy won't connect to " + _Hostname + ":" + _Port.ToString());
-                            UserConnection.WriteLn("unless you contact me via the contact form on www.fTelnet.ca.  Just let me");
-                            UserConnection.WriteLn("know the hostname and port you're trying to connect to, and I'll add it to");
-                            UserConnection.WriteLn("the whitelist for you.");
+                            if (File.Exists(Config.Default.RelayDeniedFilename)) {
+                                UserConnection.WriteLn(File.ReadAllText(Config.Default.RelayDeniedFilename).Replace("{HOSTNAME}", _Hostname).Replace("{PORT}", _Port.ToString()));
+                            } else {
+                                UserConnection.WriteLn("Sorry, for security reasons this proxy requires your BBS to be added to a");
+                                UserConnection.WriteLn("whitelist before it will forward connections.");
+                                UserConnection.WriteLn("");
+                                UserConnection.WriteLn("Please contact the server administrator and let them know the host and port:");
+                                UserConnection.WriteLn("");
+                                UserConnection.WriteLn($"{_Hostname}:{_Port}");
+                            }
                             Thread.Sleep(2500);
                             return;
                         }
