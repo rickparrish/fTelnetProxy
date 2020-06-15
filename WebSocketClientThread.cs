@@ -105,7 +105,7 @@ namespace RandM.fTelnetProxy {
                                     if (File.Exists(Config.Default.RelayFilename)) {
                                         string[] AllowedHosts = File.ReadAllLines(Config.Default.RelayFilename);
                                         if (AllowedHosts.Length > 0) {
-                                            // Check for a whitelisted port
+                                            // Check for an allowlisted port
                                             string[] AllowedPorts = AllowedHosts[0].Split(',');
                                             foreach (string AllowedPort in AllowedPorts) {
                                                 if (AllowedPort == _Port.ToString()) {
@@ -114,7 +114,7 @@ namespace RandM.fTelnetProxy {
                                                 }
                                             }
 
-                                            // Not a whitelisted port, check for a whitelisted host
+                                            // Not an allowlisteded port, check for an allowlisteded host
                                             if (!CanRelay) {
                                                 string RequestedHostPort = _Hostname.ToLower() + ":" + _Port.ToString();
                                                 foreach (string AllowedHost in AllowedHosts) {
@@ -141,8 +141,8 @@ namespace RandM.fTelnetProxy {
                             if (File.Exists(Config.Default.RelayDeniedFilename)) {
                                 UserConnection.WriteLn(File.ReadAllText(Config.Default.RelayDeniedFilename).Replace("{HOSTNAME}", _Hostname).Replace("{PORT}", _Port.ToString()));
                             } else {
-                                UserConnection.WriteLn("Sorry, for security reasons this proxy requires your BBS to be added to a");
-                                UserConnection.WriteLn("whitelist before it will forward connections.");
+                                UserConnection.WriteLn("Sorry, for security reasons this proxy requires your BBS to be added to an");
+                                UserConnection.WriteLn("allowlist before it will forward connections.");
                                 UserConnection.WriteLn("");
                                 UserConnection.WriteLn("Please contact the server administrator and let them know the host and port:");
                                 UserConnection.WriteLn("");
