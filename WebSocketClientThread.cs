@@ -182,23 +182,22 @@ namespace RandM.fTelnetProxy {
                                 }
 
                                 // Check if we should abort due to idle times
-                                // TODOX Allow to be customized
-                                if (SecondsSinceLastRX > 600) {
-                                    // 10 minutes of no server activity
-                                    RMLog.Info("{" + _ConnectionId.ToString() + "} Disconnecting after 10 minutes of no activity from server");
-                                    UserConnection.Write(Ansi.GotoXY(1, 1) + Ansi.CursorDown(255) + "\r\nDisconnecting after 10 minutes of no activity from server...");
+                                if ((Config.Default.MaxIdleTimeInMinutes > 0) && (SecondsSinceLastRX > Config.Default.MaxIdleTimeInSeconds)) {
+                                    // Exceeded idle limit with no server activity
+                                    RMLog.Info("{" + _ConnectionId.ToString() + "} Disconnecting after " + Config.Default.MaxIdleTimeInMinutes + " minutes of no activity from server");
+                                    UserConnection.Write(Ansi.GotoXY(1, 1) + Ansi.CursorDown(255) + "\r\nDisconnecting after " + Config.Default.MaxIdleTimeInMinutes + " minutes of no activity from server...");
                                     Thread.Sleep(2500);
                                     break;
-                                } else if (SecondsSinceLastTX > 600) {
-                                    // 10 minutes of no user activity
-                                    RMLog.Info("{" + _ConnectionId.ToString() + "} Disconnecting after 10 minutes of no activity from user");
-                                    UserConnection.Write(Ansi.GotoXY(1, 1) + Ansi.CursorDown(255) + "\r\nDisconnecting after 10 minutes of no activity from user...");
+                                } else if ((Config.Default.MaxIdleTimeInMinutes > 0) && (SecondsSinceLastTX > Config.Default.MaxIdleTimeInSeconds)) {
+                                    // Exceeded idle limit with no user activity
+                                    RMLog.Info("{" + _ConnectionId.ToString() + "} Disconnecting after " + Config.Default.MaxIdleTimeInMinutes + " minutes of no activity from user");
+                                    UserConnection.Write(Ansi.GotoXY(1, 1) + Ansi.CursorDown(255) + "\r\nDisconnecting after " + Config.Default.MaxIdleTimeInMinutes + " minutes of no activity from user...");
                                     Thread.Sleep(2500);
                                     break;
-                                } else if (SecondsSinceConnecting > 21600) {
-                                    // 6 hours since connecting
-                                    RMLog.Info("{" + _ConnectionId.ToString() + "} Disconnecting after 6 hours");
-                                    UserConnection.Write(Ansi.GotoXY(1, 1) + Ansi.CursorDown(255) + "\r\nDisconnecting after 6 hours...");
+                                } else if ((Config.Default.MaxSessionLengthInHours > 0) && (SecondsSinceConnecting > Config.Default.MaxSessionLengthInSeconds)) {
+                                    // Exceeded session limit
+                                    RMLog.Info("{" + _ConnectionId.ToString() + "} Disconnecting after " + Config.Default.MaxSessionLengthInHours + " hours");
+                                    UserConnection.Write(Ansi.GotoXY(1, 1) + Ansi.CursorDown(255) + "\r\nDisconnecting after " + Config.Default.MaxSessionLengthInHours + " hours...");
                                     Thread.Sleep(2500);
                                     break;
                                 }

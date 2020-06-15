@@ -9,6 +9,8 @@ namespace RandM.fTelnetProxy {
         public string CertificatePassword { get; set; }
         public int ListenPort { get; set; }
         public LogLevel LogLevel { get; set; }
+        public double MaxIdleTimeInMinutes { get; set; }
+        public double MaxSessionLengthInHours;
         public string RelayFilename { get; set; }
         public string RelayDeniedFilename { get; set; }
         public int RLoginPort { get; set; }
@@ -24,6 +26,8 @@ namespace RandM.fTelnetProxy {
             CertificatePassword = "";
             ListenPort = 80; // TODOX ip6tables doesn't support port forwarding, so might need option to listen on multiple ports
             LogLevel = LogLevel.Info;
+            MaxIdleTimeInMinutes = 10;
+            MaxSessionLengthInHours = 6;
             RelayDeniedFilename = "relay-denied.ans";
             RelayFilename = "";
             RLoginPort = 513;
@@ -96,6 +100,28 @@ namespace RandM.fTelnetProxy {
                     RMLog.Error("-Relay denied file not found: '" + RelayDeniedFilename + "'");
                     RelayDeniedFilename = "";
                 }
+            }
+            if (MaxIdleTimeInMinutes > 0) {
+                RMLog.Info($"-Max idle time before disconnecting: {MaxIdleTimeInMinutes} minutes");
+            } else {
+                RMLog.Info("-Max idle time before disconnecting: DISABLED");
+            }
+            if (MaxSessionLengthInHours > 0) {
+                RMLog.Info($"-Max session length before disconnecting: {MaxSessionLengthInHours} hours");
+            } else {
+                RMLog.Info("-Max session length before disconnecting: DISABLED");
+            }
+        }
+
+        public double MaxIdleTimeInSeconds {
+            get {
+                return MaxIdleTimeInMinutes * 60;
+            }
+        }
+
+        public double MaxSessionLengthInSeconds {
+            get {
+                return MaxSessionLengthInHours * 3600;
             }
         }
     }
