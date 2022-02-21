@@ -21,7 +21,6 @@ namespace RandM.fTelnetProxy {
 
         public Config()
             : base(ConfigSaveLocation.Relative) {
-            Certificate = null;
             CertificateFilename = "";
             CertificatePassword = "";
             ListenPort = 80; // TODOX ip6tables doesn't support port forwarding, so might need option to listen on multiple ports
@@ -35,7 +34,15 @@ namespace RandM.fTelnetProxy {
             TargetPort = 23;
         }
 
-        public X509Certificate2 Certificate { get; set; }
+        public X509Certificate2 Certificate { get
+            {
+                if (string.IsNullOrWhiteSpace(CertificateFilename) || !File.Exists(CertificateFilename)) {
+                    return null;
+                } else {
+                    return new X509Certificate2(CertificateFilename, CertificatePassword);
+                }
+            }
+        }
 
         public new void Load() {
             // Try to load, and save a new file if load failed

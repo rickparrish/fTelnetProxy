@@ -362,9 +362,12 @@ namespace RandM.fTelnetProxy {
                         Environment.SetEnvironmentVariable("MONO_TLS_PROVIDER", "btls");
                     }
 
-                    Config.Default.Certificate = new X509Certificate2(Config.Default.CertificateFilename, Config.Default.CertificatePassword);
+                    // Try loading the certificate to ensure there are no problems
+                    var testCert = Config.Default.Certificate;
                 } catch (Exception ex) {
+                    // Loading cert failed, so wipe the filename to ensure we don't try loading it again later
                     RMLog.Exception(ex, "--Error loading cert file");
+                    Config.Default.CertificateFilename = null;
                 }
             }
 
