@@ -12,7 +12,7 @@ namespace RandM.fTelnetProxy {
         /// </summary>
         static void Main(string[] args) {
             // Check for service mode or console mode
-            if ((Environment.UserInteractive) || OSUtils.IsUnix) {
+            if (Environment.UserInteractive || OSUtils.IsUnix) {
                 // Console mode, check for arguments
                 if (args.Length > 0) {
                     try {
