@@ -64,7 +64,7 @@ namespace RandM.fTelnetProxy {
                 RMLog.Info("-RLogin target..DISABLED");
             }
             RMLog.Info("-Log level......" + LogLevel.ToString());
-            if (CertificateFilename != "") {
+            if (!string.IsNullOrWhiteSpace(CertificateFilename)) {
                 // If file doesn't exist, and it's relative, convert to absolute
                 if (!File.Exists(CertificateFilename) && !Path.IsPathRooted(CertificateFilename)) {
                     CertificateFilename = StringUtils.PathCombine(ProcessUtils.StartupPath, CertificateFilename);
@@ -72,7 +72,7 @@ namespace RandM.fTelnetProxy {
 
                 if (File.Exists(CertificateFilename)) {
                     RMLog.Info("-Cert file......" + CertificateFilename);
-                    if (CertificatePassword == "") {
+                    if (string.IsNullOrWhiteSpace(CertificatePassword)) {
                         RMLog.Info("-Cert password..none");
                     } else {
                         RMLog.Info("-Cert password..yes (hidden)");
@@ -82,7 +82,7 @@ namespace RandM.fTelnetProxy {
                     CertificateFilename = "";
                 }
             }
-            if (RelayFilename != "") {
+            if (!string.IsNullOrWhiteSpace(RelayFilename)) {
                 // If file doesn't exist, and it's relative, convert to absolute
                 if (!File.Exists(RelayFilename) && !Path.IsPathRooted(RelayFilename)) {
                     RelayFilename = StringUtils.PathCombine(ProcessUtils.StartupPath, RelayFilename);
@@ -95,7 +95,7 @@ namespace RandM.fTelnetProxy {
                     RelayFilename = "";
                 }
             }
-            if (RelayDeniedFilename != "") {
+            if (!string.IsNullOrWhiteSpace(RelayDeniedFilename)) {
                 // If file doesn't exist, and it's relative, convert to absolute
                 if (!File.Exists(RelayDeniedFilename) && !Path.IsPathRooted(RelayDeniedFilename)) {
                     RelayDeniedFilename = StringUtils.PathCombine(ProcessUtils.StartupPath, RelayDeniedFilename);

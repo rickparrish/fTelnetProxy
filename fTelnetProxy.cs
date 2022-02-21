@@ -288,7 +288,7 @@ namespace RandM.fTelnetProxy {
             lock (_LogLock) {
                 FileUtils.FileAppendAllText(_LogFilename, Message);
 
-                if ((Environment.UserInteractive) || OSUtils.IsUnix) {
+                if (Environment.UserInteractive || OSUtils.IsUnix) {
                     switch (e.Level) {
                         case LogLevel.Trace: Console.ForegroundColor = ConsoleColor.DarkGray; break;
                         case LogLevel.Debug: Console.ForegroundColor = ConsoleColor.Cyan; break;
@@ -355,7 +355,7 @@ namespace RandM.fTelnetProxy {
             ParseEnvironmentVariables();
             ParseCommandLineArgs();
 
-            if ((Config.Default.CertificateFilename != "") && File.Exists(Config.Default.CertificateFilename)) {
+            if (!string.IsNullOrWhiteSpace(Config.Default.CertificateFilename) && File.Exists(Config.Default.CertificateFilename)) {
                 try {
                     if (OSUtils.IsUnix)
                     {
