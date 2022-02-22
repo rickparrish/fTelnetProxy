@@ -74,13 +74,7 @@ namespace RandM.fTelnetProxy {
                     // If we get here it's a proxy connection, so handle it
                     RMLog.Info("{" + _ConnectionId.ToString() + "} Connection accepted from " + UserConnection.GetRemoteIP() + ":" + UserConnection.GetRemotePort());
 
-                    string MessageText = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\r\n",
-                        DateTime.Now.ToString(),
-                        UserConnection.GetRemoteIP(),
-                        UserConnection.GetRemotePort(),
-                        UserConnection.Header["Path"],
-                        UserConnection.Protocol,
-                        UserConnection.SubProtocol);
+                    string MessageText = $"{DateTime.Now}\t{UserConnection.GetRemoteIP()}\t{UserConnection.GetRemotePort()}\t{UserConnection.Header["Path"]}\t{UserConnection.Protocol}\t{UserConnection.SubProtocol}\t{UserConnection.ClientProtocols}\t{UserConnection.Version}\r\n";
                     FileUtils.FileAppendAllText(Path.Combine(ProcessUtils.StartupPath, "fTelnetProxy-Connections.log"), MessageText, Encoding.ASCII);
 
                     // Defaults for redirect location
