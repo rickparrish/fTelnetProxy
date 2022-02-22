@@ -15,6 +15,8 @@ namespace RandM.fTelnetProxy {
         private int _Port;
         private WebSocketConnection _Server;
 
+        public event EventHandler ListeningEvent = null;
+
         public WebSocketServerThread(string address, int port) {
             _Address = address;
             _Port = port;
@@ -60,6 +62,8 @@ namespace RandM.fTelnetProxy {
         protected override void Execute() {
             using (_Server = new WebSocketConnection()) {
                 if (_Server.Listen(_Address, _Port)) {
+                    RaiseListeningEvent();
+
                     while (!_Stop) {
                         try {
                             // Accept an incoming connection
@@ -103,6 +107,11 @@ namespace RandM.fTelnetProxy {
                     RMLog.Error("WebSocket Server Thread: Unable to listen on " + _Address + ":" + _Port);
                 }
             }
+        }
+
+        private void RaiseListeningEvent()
+        {
+            ListeningEvent?.Invoke(this, EventArgs.Empty);
         }
 
         public override void Stop() {

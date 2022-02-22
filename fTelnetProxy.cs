@@ -3,8 +3,7 @@ using System;
 using System.Collections;
 using System.IO;
 using System.Linq;
-using System.Security.Cryptography.X509Certificates;
-using System.Text;
+using System.Security.Principal;
 
 namespace RandM.fTelnetProxy {
     public class fTelnetProxy : IDisposable {
@@ -53,6 +52,33 @@ namespace RandM.fTelnetProxy {
         public void DisplayActiveConnections() {
             RMLog.Info($" - {_WebSocketServer.ClientConnectionCount} connections:");
             _WebSocketServer.DisplayActiveConnections();
+        }
+
+        public void DropRoot(string targetUser)
+        {
+            // Don't do anything if no user was given, or if root was given as the target user
+            if (string.IsNullOrWhiteSpace(targetUser) || targetUser.Equals("root", StringComparison.OrdinalIgnoreCase)) {
+                return;
+            }
+
+            // If we're on a Unix machine, and running as root, drop privilege to the target user
+            if (OSUtils.IsUnix && (WindowsIdentity.GetCurrent().Token == IntPtr.Zero))
+            {
+                RMLog.Info($"Switching user from 'root' to '{targetUser}'");
+
+                using (WindowsIdentity wiTarget = new WindowsIdentity(targetUser))
+                {
+                    wiTarget.Impersonate();
+
+                    using (WindowsIdentity wiCurrent = WindowsIdentity.GetCurrent())
+                    {
+                        if (wiCurrent.Name != targetUser)
+                        {
+                            throw new ArgumentOutOfRangeException(nameof(targetUser), "Requested user account '" + targetUser + "' does not exist");
+                        }
+                    }
+                }
+            }
         }
 
         // TODOY Consolidate with ParseEnvironmentVariables
@@ -165,6 +191,12 @@ namespace RandM.fTelnetProxy {
                             }
                             break;
 
+                        case "u":
+                        case "user":
+                            i += 1;
+                            Config.Default.User = Args[i];
+                            break;
+
                         default:
                             RMLog.Error("-Unknown parameter: '" + Args[i] + "'");
                             break;
@@ -270,6 +302,12 @@ namespace RandM.fTelnetProxy {
                             }
                             break;
 
+                        case "u":
+                        case "user":
+                            i += 1;
+                            Config.Default.User = Value;
+                            break;
+
                         default:
                             RMLog.Error("-Unknown parameter: '" + Arg + "'");
                             break;
@@ -310,36 +348,39 @@ namespace RandM.fTelnetProxy {
                 Console.WriteLine();                                                                               //
                 Console.WriteLine("Service-mode parameters:");                                                     //
                 Console.WriteLine();                                                                               //
-                Console.WriteLine("  /i, -i, /install, --install       Install the service");                      //
+                Console.WriteLine("  /install, --install       Install the service");                              //
                 Console.WriteLine();                                                                               //
-                Console.WriteLine("  /u, -u, /uninstall, --uninstall   Uninstall the service");                    //
+                Console.WriteLine("  /uninstall, --uninstall   Uninstall the service");                            //
                 Console.WriteLine();                                                                               //
                 Console.WriteLine("  Edit the " + Config.Default.FileName + " file to configure");                 //
                 Console.WriteLine();                                                                               //
                 Console.WriteLine();                                                                               //
                 Console.WriteLine("Console-mode parameters:");                                                     //
                 Console.WriteLine();                                                                               //
-                Console.WriteLine("  -p <port>                  Port to listen for connections on");               //
+                Console.WriteLine("  /p <port>                  Port to listen for connections on");               //
                 Console.WriteLine("  --port <port>              Default is 80");                                   //
                 Console.WriteLine();                                                                               //
-                Console.WriteLine("  -t <host:port>             Telnet server to redirect to");                    //
+                Console.WriteLine("  /t <host:port>             Telnet server to redirect to");                    //
                 Console.WriteLine("  --target <host:port>       Default is localhost:23");                         //
                 Console.WriteLine("                             Use port 0 to disable telnet (ie localhost:0)");   //
                 Console.WriteLine();                                                                               //
-                Console.WriteLine("  -rp <port>                 RLogin port to redirect to");                      //
+                Console.WriteLine("  /rp <port>                 RLogin port to redirect to");                      //
                 Console.WriteLine("  --rlogn-port <port>        Default is 513");                                  //
                 Console.WriteLine("  --rlogn-port <port>        Use port 0 to disable rlogin (ie -rp 0)");         //
                 Console.WriteLine();                                                                               //
-                Console.WriteLine("  -c <filename>              PKCS12 file containing private key + cert chain"); //
+                Console.WriteLine("  /c <filename>              PKCS12 file containing private key + cert chain"); //
                 Console.WriteLine("  --cert <filename>          Needed if your site uses https://");               //
                 Console.WriteLine();                                                                               //
-                Console.WriteLine("  -pw <password>             Password to open the PKCS12 file");                //
+                Console.WriteLine("  /pw <password>             Password to open the PKCS12 file");                //
                 Console.WriteLine("  --password <password>      Needed if your PKCS12 file is password protected");//
                 Console.WriteLine();                                                                               //
-                Console.WriteLine("  -l <level>                 Log level (Trace, Debug, Info, Warning, Error)");  //
+                Console.WriteLine("  /l <level>                 Log level (Trace, Debug, Info, Warning, Error)");  //
                 Console.WriteLine("  --loglevel <level>         Default is Info");                                 //
                 Console.WriteLine();                                                                               //
-                Console.WriteLine("  -?, -h, --help             Display this screen");                             //
+                Console.WriteLine("  /u <name>                  Which user to run as after binding to ports");     //
+                Console.WriteLine("  --user <name>              Only applies to *nix when starting as root");      //
+                Console.WriteLine();                                                                               //
+                Console.WriteLine("  /?, /h, --help             Display this screen");                             //
                 Console.WriteLine();                                                                               //
                 //Console.WriteLine("345678901234567890123456789012345678901234567890123456789012345678901234567890");
                 Environment.Exit(1);
@@ -374,6 +415,7 @@ namespace RandM.fTelnetProxy {
             try {
                 RMLog.Info("Starting WebSocket proxy thread");
                 _WebSocketServer = new WebSocketServerThread("0.0.0.0", Config.Default.ListenPort);
+                _WebSocketServer.ListeningEvent += WebSocketServer_ListeningEvent;
                 _WebSocketServer.Start();
             } catch (Exception ex) {
                 RMLog.Exception(ex, "Failed to start WebSocket proxy thread");
@@ -395,6 +437,11 @@ namespace RandM.fTelnetProxy {
             RMLog.Info("fTelnetProxy terminated");
 
             FileUtils.FileAppendAllText(_LogFilename, Environment.NewLine + Environment.NewLine);
+        }
+
+        private void WebSocketServer_ListeningEvent(object sender, EventArgs e)
+        {
+            DropRoot(Config.Default.User);
         }
     }
 }

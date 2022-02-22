@@ -16,6 +16,7 @@ namespace RandM.fTelnetProxy {
         public int RLoginPort { get; set; }
         public string TargetHostname { get; set; }
         public int TargetPort { get; set; }
+        public string User { get; set; }
 
         static public Config Default = new Config();
 
@@ -32,6 +33,7 @@ namespace RandM.fTelnetProxy {
             RLoginPort = 513;
             TargetHostname = "localhost";
             TargetPort = 23;
+            User = null;
         }
 
         public X509Certificate2 Certificate { get
@@ -52,18 +54,18 @@ namespace RandM.fTelnetProxy {
 
             // Output the settings being used
             RMLog.Info("Using settings from " + base.FileName);
-            RMLog.Info("-Listen port...." + ListenPort.ToString());
+            RMLog.Info("-Listen port: " + ListenPort.ToString());
             if (TargetPort > 0) {
-                RMLog.Info("-Telnet target.." + TargetHostname + ":" + TargetPort.ToString());
+                RMLog.Info("-Telnet target: " + TargetHostname + ":" + TargetPort.ToString());
             } else {
-                RMLog.Info("-Telnet target..DISABLED");
+                RMLog.Info("-Telnet target: DISABLED");
             }
             if (RLoginPort > 0) {
-                RMLog.Info("-RLogin target.." + TargetHostname + ":" + RLoginPort.ToString());
+                RMLog.Info("-RLogin target: " + TargetHostname + ":" + RLoginPort.ToString());
             } else {
-                RMLog.Info("-RLogin target..DISABLED");
+                RMLog.Info("-RLogin target: DISABLED");
             }
-            RMLog.Info("-Log level......" + LogLevel.ToString());
+            RMLog.Info("-Log level: " + LogLevel.ToString());
             if (!string.IsNullOrWhiteSpace(CertificateFilename)) {
                 // If file doesn't exist, and it's relative, convert to absolute
                 if (!File.Exists(CertificateFilename) && !Path.IsPathRooted(CertificateFilename)) {
@@ -71,16 +73,20 @@ namespace RandM.fTelnetProxy {
                 }
 
                 if (File.Exists(CertificateFilename)) {
-                    RMLog.Info("-Cert file......" + CertificateFilename);
+                    RMLog.Info("-Cert file: " + CertificateFilename);
                     if (string.IsNullOrWhiteSpace(CertificatePassword)) {
-                        RMLog.Info("-Cert password..none");
+                        RMLog.Info("-Cert password: none");
                     } else {
-                        RMLog.Info("-Cert password..yes (hidden)");
+                        RMLog.Info("-Cert password: yes (hidden)");
                     }
                 } else {
                     RMLog.Error("-Cert file not found: '" + CertificateFilename + "'");
                     CertificateFilename = "";
                 }
+            }
+            if (!string.IsNullOrWhiteSpace(User) && OSUtils.IsUnix)
+            {
+                RMLog.Info($"-Run as user: '{User}'");
             }
             if (!string.IsNullOrWhiteSpace(RelayFilename)) {
                 // If file doesn't exist, and it's relative, convert to absolute
@@ -89,7 +95,7 @@ namespace RandM.fTelnetProxy {
                 }
 
                 if (File.Exists(RelayFilename)) {
-                    RMLog.Info("-Relay file....." + RelayFilename);
+                    RMLog.Info("-Relay file: " + RelayFilename);
                 } else {
                     RMLog.Error("-Relay file not found: '" + RelayFilename + "'");
                     RelayFilename = "";
@@ -102,7 +108,7 @@ namespace RandM.fTelnetProxy {
                 }
 
                 if (File.Exists(RelayDeniedFilename)) {
-                    RMLog.Info("-Relay denied file....." + RelayDeniedFilename);
+                    RMLog.Info("-Relay denied file: " + RelayDeniedFilename);
                 } else {
                     RMLog.Error("-Relay denied file not found: '" + RelayDeniedFilename + "'");
                     RelayDeniedFilename = "";
