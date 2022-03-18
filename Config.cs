@@ -33,7 +33,7 @@ namespace RandM.fTelnetProxy {
             RLoginPort = 513;
             TargetHostname = "localhost";
             TargetPort = 23;
-            User = null;
+            User = "";
         }
 
         public X509Certificate2 Certificate { get
