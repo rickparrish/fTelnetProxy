@@ -34,7 +34,13 @@ namespace RandM.fTelnetProxy {
             if (sender is WebSocketClientThread) {
                 lock (_ClientThreadsLock) {
                     if (_ClientThreads.Contains((WebSocketClientThread)sender)) {
-                        _ClientThreads.Remove((WebSocketClientThread)sender);
+                        try {
+                            ((WebSocketClientThread)sender).Dispose();
+                        } catch (Exception ex) {
+                            RMLog.Exception(ex, "Exception while disposing client thread while handling client thread finish event");
+                        } finally {
+                            _ClientThreads.Remove((WebSocketClientThread)sender);
+                        }
                         RMLog.Info(_ClientThreads.Count.ToString() + " active connections");
                     } else {
                         RMLog.Error("ClientThread_FinishEvent did not find sender in _ClientThreads (sender=" + sender.ToString() + ")");

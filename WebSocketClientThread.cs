@@ -29,6 +29,18 @@ namespace RandM.fTelnetProxy {
             if (!_Disposed) {
                 if (disposing) {
                     // dispose managed state (managed objects).
+                    if (_Socket != null) {
+                        try {
+                            if (_Socket.Connected) {
+                                _Socket.Close();
+                            }
+                            _Socket.Dispose();
+                        } catch (Exception ex) {
+                            RMLog.Exception(ex, "Exception while closing socket while disposing client thread");
+                        } finally {
+                            _Socket = null;
+                        }
+                    }
                 }
 
                 // free unmanaged resources (unmanaged objects)
@@ -74,7 +86,7 @@ namespace RandM.fTelnetProxy {
                     // If we get here it's a proxy connection, so handle it
                     RMLog.Info("{" + _ConnectionId.ToString() + "} Connection accepted from " + UserConnection.GetRemoteIP() + ":" + UserConnection.GetRemotePort());
 
-                    string MessageText = $"{DateTime.Now}\t{UserConnection.GetRemoteIP()}\t{UserConnection.GetRemotePort()}\t{UserConnection.Header["Path"]}\t{UserConnection.Protocol}\t{UserConnection.SubProtocol}\t{UserConnection.ClientProtocols}\t{UserConnection.Version}\r\n";
+                    string MessageText = $"{DateTime.Now}\t{UserConnection.GetRemoteIP()}\t{UserConnection.GetRemotePort()}\t{UserConnection.Header["Path"]}\t{UserConnection.Protocol}\t{UserConnection.SubProtocol}\t{UserConnection.ClientProtocols}\t{UserConnection.Version}\t{UserConnection.Header["Host"]}\t{UserConnection.Header["Origin"]}\t{UserConnection.Header["Referer"]}\r\n";
                     FileUtils.FileAppendAllText(Path.Combine(ProcessUtils.StartupPath, "fTelnetProxy-Connections.log"), MessageText, Encoding.ASCII);
 
                     // Defaults for redirect location
