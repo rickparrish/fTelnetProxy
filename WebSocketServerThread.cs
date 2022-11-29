@@ -8,18 +8,20 @@ using System.Threading;
 
 namespace RandM.fTelnetProxy {
     public class WebSocketServerThread : RMThread {
+        public readonly int Port;
+
         private string _Address;
         private int _ClientThreadCounter = 0;
         private List<WebSocketClientThread> _ClientThreads = new List<WebSocketClientThread>();
         private object _ClientThreadsLock = new object();
-        private int _Port;
         private WebSocketConnection _Server;
 
+        public event EventHandler ClientCountEvent = null;
         public event EventHandler ListeningEvent = null;
 
         public WebSocketServerThread(string address, int port) {
             _Address = address;
-            _Port = port;
+            Port = port;
         }
 
         public int ClientConnectionCount {
@@ -41,11 +43,12 @@ namespace RandM.fTelnetProxy {
                         } finally {
                             _ClientThreads.Remove((WebSocketClientThread)sender);
                         }
-                        RMLog.Info(_ClientThreads.Count.ToString() + " active connections");
                     } else {
                         RMLog.Error("ClientThread_FinishEvent did not find sender in _ClientThreads (sender=" + sender.ToString() + ")");
                     }
                 }
+
+                RaiseClientCountEvent();
             } else {
                 RMLog.Error("ClientThread_FinishEvent's sender is not a WebSocketClientThread (sender=" + sender.ToString() + ")");
             }
@@ -67,52 +70,66 @@ namespace RandM.fTelnetProxy {
 
         protected override void Execute() {
             using (_Server = new WebSocketConnection()) {
-                if (_Server.Listen(_Address, _Port)) {
-                    RaiseListeningEvent();
+                while (!_Stop) {
+                    if (_Server.Listen(_Address, Port)) {
+                        RMLog.Info($"WebSocket Server Thread listening on {_Address}:{Port}");
+                        RaiseListeningEvent();
 
-                    while (!_Stop) {
-                        try {
-                            // Accept an incoming connection
-                            if (_Server.CanAccept(1000)) // 1 second
-                            {
-                                Socket NewSocket = _Server.Accept();
-                                if (NewSocket != null) {
-                                    lock (_ClientThreadsLock) {
-                                        WebSocketClientThread ClientThread = new WebSocketClientThread(NewSocket, ++_ClientThreadCounter);
-                                        ClientThread.FinishEvent += ClientThread_FinishEvent;
-                                        _ClientThreads.Add(ClientThread);
-                                        RMLog.Info(_ClientThreads.Count.ToString() + " active connections");
-                                        ClientThread.Start();
+                        while (!_Stop) {
+                            try {
+                                // Accept an incoming connection
+                                if (_Server.CanAccept(1000)) // 1 second
+                                {
+                                    Socket NewSocket = _Server.Accept();
+                                    if (NewSocket != null) {
+                                        lock (_ClientThreadsLock) {
+                                            WebSocketClientThread ClientThread = new WebSocketClientThread(NewSocket, ++_ClientThreadCounter, Port);
+                                            ClientThread.FinishEvent += ClientThread_FinishEvent;
+                                            _ClientThreads.Add(ClientThread);
+                                            ClientThread.Start();
+                                        }
+
+                                        RaiseClientCountEvent();
                                     }
                                 }
-                            }
-                        } catch (Exception ex) {
-                            RMLog.Exception(ex, "Unable to accept new websocket connection");
-                        }
-                    }
-
-                    // Stop client threads
-                    int ClientThreadCount = 0;
-                    lock (_ClientThreadsLock) {
-                        foreach (var ClientThread in _ClientThreads) {
-                            if (ClientThread != null) {
-                                ClientThread.Stop();
+                            } catch (Exception ex) {
+                                RMLog.Exception(ex, "Unable to accept new websocket connection");
                             }
                         }
-                        ClientThreadCount = _ClientThreads.Count;
-                    }
 
-                    // Wait for client threads
-                    while (ClientThreadCount > 0) {
+                        // Stop client threads
+                        int ClientThreadCount = 0;
                         lock (_ClientThreadsLock) {
+                            foreach (var ClientThread in _ClientThreads) {
+                                if (ClientThread != null) {
+                                    ClientThread.Stop();
+                                }
+                            }
                             ClientThreadCount = _ClientThreads.Count;
                         }
-                        Thread.Sleep(100);
+
+                        // Wait for client threads
+                        while (ClientThreadCount > 0) {
+                            lock (_ClientThreadsLock) {
+                                ClientThreadCount = _ClientThreads.Count;
+                            }
+                            Thread.Sleep(100);
+                        }
+                    } else {
+                        RMLog.Error($"WebSocket Server Thread: Unable to listen on {_Address}:{Port}, retrying in 15 seconds");
+                        for (int i = 0; i < 15; i++) {
+                            Thread.Sleep(1000);
+                            if (_Stop) {
+                                break;
+                            }
+                        }
                     }
-                } else {
-                    RMLog.Error("WebSocket Server Thread: Unable to listen on " + _Address + ":" + _Port);
                 }
             }
+        }
+
+        private void RaiseClientCountEvent() {
+            ClientCountEvent?.Invoke(this, EventArgs.Empty);
         }
 
         private void RaiseListeningEvent()

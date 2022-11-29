@@ -1,16 +1,18 @@
 ﻿using RandM.RMLib;
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security.Principal;
 
 namespace RandM.fTelnetProxy {
     public class fTelnetProxy : IDisposable {
+        private int _ListenCounter = 0;
         private string _LogFilename = Path.ChangeExtension(ProcessUtils.ExecutablePath, ".log");
         private object _LogLock = new object();
         private bool _Stopping = false;
-        private WebSocketServerThread _WebSocketServer = null;
+        private List<WebSocketServerThread> _WebSocketServers = new List<WebSocketServerThread>();
 
         #region IDisposable Support
         private bool disposedValue = false; // To detect redundant calls
@@ -19,8 +21,18 @@ namespace RandM.fTelnetProxy {
             if (!disposedValue) {
                 if (disposing) {
                     // dispose managed state (managed objects).
-                    if (!_Stopping) Stop();
-                    if (_WebSocketServer != null) _WebSocketServer.Dispose();
+                    if (!_Stopping) {
+                        Stop();
+                    }
+
+                    if (_WebSocketServers != null) {
+                        foreach (var server in _WebSocketServers) {
+                            if (server != null) {
+                                server.Dispose();
+                            }
+                        }
+                        _WebSocketServers = null;
+                    }
                 }
 
                 // free unmanaged resources (unmanaged objects)
@@ -45,13 +57,15 @@ namespace RandM.fTelnetProxy {
 
         public int ClientConnectionCount {
             get {
-                return _WebSocketServer.ClientConnectionCount;
+                return _WebSocketServers.Sum(x => x.ClientConnectionCount);
             }
         }
 
         public void DisplayActiveConnections() {
-            RMLog.Info($" - {_WebSocketServer.ClientConnectionCount} connections:");
-            _WebSocketServer.DisplayActiveConnections();
+            foreach (var server in _WebSocketServers) {
+                RMLog.Info($" - Port {server.Port} has {server.ClientConnectionCount} connections:");
+                server.DisplayActiveConnections();
+            }
         }
 
         public void DropRoot(string targetUser)
@@ -128,10 +142,10 @@ namespace RandM.fTelnetProxy {
                         case "port":
                             i += 1;
                             try {
-                                Config.Default.ListenPort = Convert.ToInt16(Args[i]);
-                                RMLog.Info("-Listen port...." + Config.Default.ListenPort.ToString());
+                                Config.Default.ListenPorts = Args[i];
+                                RMLog.Info("-Listen port(s)...." + string.Join(", ", Config.Default.ListenPortsArray));
                             } catch (Exception ex) {
-                                RMLog.Exception(ex, "-Invalid port: '" + Args[i] + "'");
+                                RMLog.Exception(ex, "-Invalid port(s): '" + Args[i] + "'");
                             }
                             break;
 
@@ -244,10 +258,10 @@ namespace RandM.fTelnetProxy {
                         case "p":
                         case "port":
                             try {
-                                Config.Default.ListenPort = Convert.ToInt16(Value);
-                                RMLog.Info("-Listen port...." + Config.Default.ListenPort.ToString());
+                                Config.Default.ListenPorts = Value;
+                                RMLog.Info("-Listen port(s)...." + string.Join(", ", Config.Default.ListenPortsArray));
                             } catch (Exception ex) {
-                                RMLog.Exception(ex, "-Invalid port: '" + Value + "'");
+                                RMLog.Exception(ex, "-Invalid port(s): '" + Value + "'");
                             }
                             break;
 
@@ -412,14 +426,20 @@ namespace RandM.fTelnetProxy {
                 }
             }
 
-            try {
-                RMLog.Info("Starting WebSocket proxy thread");
-                _WebSocketServer = new WebSocketServerThread("0.0.0.0", Config.Default.ListenPort);
-                _WebSocketServer.ListeningEvent += WebSocketServer_ListeningEvent;
-                _WebSocketServer.Start();
-            } catch (Exception ex) {
-                RMLog.Exception(ex, "Failed to start WebSocket proxy thread");
-                Environment.Exit(1);
+            foreach (int port in Config.Default.ListenPortsArray) {
+                try {
+                    RMLog.Info($"Starting WebSocket proxy thread for port {port}");
+
+                    var server = new WebSocketServerThread("0.0.0.0", port);
+                    server.ClientCountEvent += WebSocketServer_ClientCountEvent;
+                    server.ListeningEvent += WebSocketServer_ListeningEvent;
+                    server.Start();
+
+                    _WebSocketServers.Add(server);
+                } catch (Exception ex) {
+                    RMLog.Exception(ex, $"Failed to start WebSocket proxy thread for port {port}");
+                    Environment.Exit(1);
+                }
             }
         }
 
@@ -428,10 +448,17 @@ namespace RandM.fTelnetProxy {
 
             RMLog.Info("fTelnetProxy shutting down");
 
-            if (_WebSocketServer != null) {
-                RMLog.Info("Stopping WebSocket proxy thread");
-                _WebSocketServer.Stop();
-                _WebSocketServer.WaitFor();
+            if (_WebSocketServers != null) {
+                while (_WebSocketServers.Any()) {
+                    var server = _WebSocketServers.First();
+                    if (server != null) {
+                        RMLog.Info($"Stopping WebSocket proxy thread for port {server.Port}");
+                        server.Stop();
+                        server.WaitFor();
+                    }
+
+                    _WebSocketServers.Remove(server);
+                }
             }
 
             RMLog.Info("fTelnetProxy terminated");
@@ -439,9 +466,17 @@ namespace RandM.fTelnetProxy {
             FileUtils.FileAppendAllText(_LogFilename, Environment.NewLine + Environment.NewLine);
         }
 
+        private void WebSocketServer_ClientCountEvent(object sender, EventArgs e) {
+            RMLog.Info(ClientConnectionCount + " active connections");
+        }
+
         private void WebSocketServer_ListeningEvent(object sender, EventArgs e)
         {
-            DropRoot(Config.Default.User);
+            // Drop root once all server threads are listening
+            _ListenCounter += 1;
+            if (_ListenCounter == Config.Default.ListenPortsArray.Length) {
+                DropRoot(Config.Default.User);
+            }
         }
     }
 }

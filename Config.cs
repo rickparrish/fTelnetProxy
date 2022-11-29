@@ -1,13 +1,13 @@
 ﻿using RandM.RMLib;
-using System;
 using System.IO;
+using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 
 namespace RandM.fTelnetProxy {
     public class Config : ConfigHelper {
         public string CertificateFilename { get; set; }
         public string CertificatePassword { get; set; }
-        public int ListenPort { get; set; }
+        public string ListenPorts { get; set; }
         public LogLevel LogLevel { get; set; }
         public double MaxIdleTimeInMinutes { get; set; }
         public double MaxSessionLengthInHours;
@@ -24,7 +24,7 @@ namespace RandM.fTelnetProxy {
             : base(ConfigSaveLocation.Relative) {
             CertificateFilename = "";
             CertificatePassword = "";
-            ListenPort = 80; // TODOX ip6tables doesn't support port forwarding, so might need option to listen on multiple ports
+            ListenPorts = "80,443";
             LogLevel = LogLevel.Info;
             MaxIdleTimeInMinutes = 10;
             MaxSessionLengthInHours = 6;
@@ -36,8 +36,8 @@ namespace RandM.fTelnetProxy {
             User = "";
         }
 
-        public X509Certificate2 Certificate { get
-            {
+        public X509Certificate2 Certificate { 
+            get {
                 if (string.IsNullOrWhiteSpace(CertificateFilename) || !File.Exists(CertificateFilename)) {
                     return null;
                 } else {
@@ -54,7 +54,7 @@ namespace RandM.fTelnetProxy {
 
             // Output the settings being used
             RMLog.Info("Using settings from " + base.FileName);
-            RMLog.Info("-Listen port: " + ListenPort.ToString());
+            RMLog.Info("-Listen port(s): " + string.Join(", ", ListenPortsArray));
             if (TargetPort > 0) {
                 RMLog.Info("-Telnet target: " + TargetHostname + ":" + TargetPort.ToString());
             } else {
@@ -123,6 +123,12 @@ namespace RandM.fTelnetProxy {
                 RMLog.Info($"-Max session length before disconnecting: {MaxSessionLengthInHours} hours");
             } else {
                 RMLog.Info("-Max session length before disconnecting: DISABLED");
+            }
+        }
+
+        public int[] ListenPortsArray {
+            get {
+                return ListenPorts.Split(',').Select(x => int.Parse(x)).ToArray();
             }
         }
 

@@ -18,11 +18,13 @@ namespace RandM.fTelnetProxy {
         private string _Hostname = "no_hostname_yet";
         private int _Port = 0;
         private string _RemoteIP = "no_remote_ip";
+        private int _ServerPort = 0;
         private Socket _Socket = null;
 
-        public WebSocketClientThread(Socket socket, int connectionId) {
+        public WebSocketClientThread(Socket socket, int connectionId, int serverPort) {
             _Socket = socket;
             _ConnectionId = connectionId;
+            _ServerPort = serverPort;
         }
 
         protected override void Dispose(bool disposing) {
@@ -76,17 +78,17 @@ namespace RandM.fTelnetProxy {
                         }
                     } else {
                         if (UserConnection.FlashPolicyFileRequest) {
-                            RMLog.Info("{" + _ConnectionId.ToString() + "} Answered flash policy file request from " + UserConnection.GetRemoteIP() + ":" + UserConnection.GetRemotePort().ToString());
+                            RMLog.Info("{" + _ConnectionId.ToString() + "} Answered flash policy file request from " + UserConnection.GetRemoteIP() + ":" + UserConnection.GetRemotePort().ToString() + " on port " + _ServerPort.ToString());
                         } else {
-                            RMLog.Debug("{" + _ConnectionId.ToString() + "} Invalid WebSocket connection from " + UserConnection.GetRemoteIP() + ":" + UserConnection.GetRemotePort().ToString());
+                            RMLog.Debug("{" + _ConnectionId.ToString() + "} Invalid WebSocket connection from " + UserConnection.GetRemoteIP() + ":" + UserConnection.GetRemotePort().ToString() + " on port " + _ServerPort.ToString());
                         }
                         return;
                     }
 
                     // If we get here it's a proxy connection, so handle it
-                    RMLog.Info("{" + _ConnectionId.ToString() + "} Connection accepted from " + UserConnection.GetRemoteIP() + ":" + UserConnection.GetRemotePort());
+                    RMLog.Info("{" + _ConnectionId.ToString() + "} Connection accepted from " + UserConnection.GetRemoteIP() + ":" + UserConnection.GetRemotePort() + " on port " + _ServerPort.ToString());
 
-                    string MessageText = $"{DateTime.Now}\t{UserConnection.GetRemoteIP()}\t{UserConnection.GetRemotePort()}\t{UserConnection.Header["Path"]}\t{UserConnection.Protocol}\t{UserConnection.SubProtocol}\t{UserConnection.ClientProtocols}\t{UserConnection.Version}\t{UserConnection.Header["Host"]}\t{UserConnection.Header["Origin"]}\t{UserConnection.Header["Referer"]}\r\n";
+                    string MessageText = $"{DateTime.Now}\t{UserConnection.GetRemoteIP()}\t{UserConnection.GetRemotePort()}\t{UserConnection.Header["Path"]}\t{UserConnection.Protocol}\t{UserConnection.SubProtocol}\t{UserConnection.ClientProtocols}\t{UserConnection.Version}\t{UserConnection.Header["Host"]}\t{UserConnection.Header["Origin"]}\t{UserConnection.Header["Referer"]}\t{_ServerPort}\r\n";
                     FileUtils.FileAppendAllText(Path.Combine(ProcessUtils.StartupPath, "fTelnetProxy-Connections.log"), MessageText, Encoding.ASCII);
 
                     // Defaults for redirect location
