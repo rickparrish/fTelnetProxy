@@ -30,7 +30,7 @@ To install or uninstall as a Windows Service, use the /i or /u parameters.
 You can also run fTelnetProxy in a Docker container.  The Dockerfile is included in the repository.
 Recommended approach is to use the docker composer file to build and run the container.
 
-Simply launch it using `docker compose up -d`, you can inspect the logs using `docker compose logs -f`
+Simply launch it using `docker compose up -d --build`, you can inspect the logs using `docker compose logs -f`
 
 On first run, the container will create a default fTelnetProxy.ini file in the /app/bin/Release directory.
 Modify it to your need.
