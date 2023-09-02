@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    <title>fTelnet</title>
+    <style type="text/css">
+      html,
+      body {
+        background-color: black;
+        margin: 0;
+        padding: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="fTelnetContainer" class="fTelnetContainer"></div>
+    <script>
+      document.write(' < script src = "//embed-v2.ftelnet.ca/js/ftelnet-loader.norip.xfer.js?v=' + (new Date()).getTime() + '" > < \/script>');
+    </script>
+    <script>
+        function getString(key, defaultValue) {
+        // From: https://stackoverflow.com/a/901144/342378
+        key = key.replace(/[\[\]]/g, '\\$&');
+        var regex = new RegExp('[?&]' + key + '(=([^&#]*)|&|#|$)');
+        var results = regex.exec(window.location.href);
+        if (!results) return defaultValue;
+        if (!results[2]) return '';
+        return decodeURIComponent(results[2].replace(/\+/g, ' '));
+        }
+
+        function getBool(key, defaultValue) {
+        var result = getString(key, defaultValue);
+        return ((result != 0) && (result != 'false'));
+        }
+
+        function getInt(key, defaultValue) {
+        return parseInt(getString(key, defaultValue));
+        }
+        var Options = new fTelnetOptions();
+        Options.BareLFtoCRLF = false;
+        Options.BitsPerSecond = 57600;
+        Options.ConnectionType = 'telnet';
+        Options.Emulation = 'ansi-bbs';
+        Options.Enter = '\r';
+        Options.Font = 'CP437';
+        Options.ForceWss = false;
+        Options.Hostname = 'mywebsite.com';
+        Options.LocalEcho = false;
+        Options.NegotiateLocalEcho = true;
+        Options.Port = 443;
+        Options.ScreenColumns = 80;
+        Options.ScreenRows = 25;
+        Options.SendLocation = true;
+        var fTelnet = new fTelnetClient('fTelnetContainer', Options);
+        if (getBool('AutoConnect', false)) {
+            fTelnet.Connect();
+        }
+    </script>
+    <!--[if lt IE 10]>
+						<script type="text/javascript" src="../ftelnet/swfobject.js"></script>
+						<script type="text/javascript" src="../ftelnet/web_socket.js"></script>
+						<script>                                                                                                                                                
+            // Let the library know where WebSocketMain.swf is:                                                                                                 
+            WEB_SOCKET_SWF_LOCATION = "../ftelnet/WebSocketMain.swf";                                                                                           
+        </script>
+						<![endif]-->
+    <!--[if lt IE 9]>
+						<script>                                                                                                                                                
+            Object.defineProperty = function () { /* Do Nothing */ };                                                                                           
+        </script>
+    <![endif]-->
+  </body>
+</html>

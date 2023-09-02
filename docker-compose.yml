@@ -1,0 +1,9 @@
+version: '3'
+
+services:
+  ftelnetproxy:
+    build: .
+    ports:
+      - "4101:80"
+    volumes:
+      - ./app:/app
