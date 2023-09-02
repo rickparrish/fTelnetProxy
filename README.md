@@ -1,5 +1,4 @@
-fTelnetProxy
-============
+# fTelnetProxy
 
 A WebSocket to TCP proxy for <a href="https://github.com/rickparrish/fTelnet">fTelnet</a>
 
@@ -25,3 +24,24 @@ fTelnetProxy.ini will be created with default values the first time you run fTel
 by passing command-line parameters.  Use fTelnetProxy.exe /? to list the available parameters.
 
 To install or uninstall as a Windows Service, use the /i or /u parameters.
+
+## Docker
+
+You can also run fTelnetProxy in a Docker container.  The Dockerfile is included in the repository.
+Recommended approach is to use the docker composer file to build and run the container.
+
+Simply launch it using `docker compose up -d`, you can inspect the logs using `docker compose logs -f`
+
+On first run, the container will create a default fTelnetProxy.ini file in the /app/bin/Release directory.
+Modify it to your need.
+
+You then use nginx (or apache) to proxy the connection to the container. 
+Included is a ReverseProxySample.conf file, which assumes fteplnetproxy is routing on port 4101.
+
+You should have the index.html in `/var/www/myproxy/index.html` and the ReverseProxySample.conf in `/etc/nginx/sites-available/myproxy.conf`
+
+Then you can enable the site with `sudo ln -s /etc/nginx/sites-available/myproxy.conf /etc/nginx/sites-enabled/myproxy.conf`
+
+And reload nginx (or apache) with `sudo nginx -s reload`
+
+You can now access your website on port 443 and it will be proxied to the container, WSS will work as well.
