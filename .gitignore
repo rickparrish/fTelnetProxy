@@ -8,6 +8,8 @@ packages/*
 
 fTelnetProxy.ini
 rsync-to-proxies.cmd
+rsync-to-proxies-with-wsl.cmd
+start.sh
 *.pfx
 *.suo
 *.user

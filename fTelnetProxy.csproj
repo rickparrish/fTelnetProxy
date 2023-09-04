@@ -92,6 +92,9 @@
     <None Include="relay.cfg">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Include="start.sh">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Include="wss.pfx">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
