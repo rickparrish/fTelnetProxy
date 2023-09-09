@@ -467,7 +467,7 @@ namespace RandM.fTelnetProxy {
         }
 
         private void WebSocketServer_ClientCountEvent(object sender, EventArgs e) {
-            RMLog.Info(ClientConnectionCount + " active connections");
+            RMLog.Trace(ClientConnectionCount + " active connections");
         }
 
         private void WebSocketServer_ListeningEvent(object sender, EventArgs e)

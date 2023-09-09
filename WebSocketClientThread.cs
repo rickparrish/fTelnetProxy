@@ -80,7 +80,7 @@ namespace RandM.fTelnetProxy {
                         if (UserConnection.FlashPolicyFileRequest) {
                             RMLog.Info("{" + _ConnectionId.ToString() + "} Answered flash policy file request from " + UserConnection.GetRemoteIP() + ":" + UserConnection.GetRemotePort().ToString() + " on port " + _ServerPort.ToString());
                         } else {
-                            RMLog.Debug("{" + _ConnectionId.ToString() + "} Invalid WebSocket connection from " + UserConnection.GetRemoteIP() + ":" + UserConnection.GetRemotePort().ToString() + " on port " + _ServerPort.ToString());
+                            RMLog.Trace("{" + _ConnectionId.ToString() + "} Invalid WebSocket connection from " + UserConnection.GetRemoteIP() + ":" + UserConnection.GetRemotePort().ToString() + " on port " + _ServerPort.ToString());
                         }
                         return;
                     }
