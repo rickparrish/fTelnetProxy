@@ -180,7 +180,7 @@ namespace RandM.fTelnetProxy {
                                 }
 
                                 if (ServerConnection.CanRead()) {
-                                    UserConnection.WriteBytes(ServerConnection.ReadBytes(1024)); // 1k at a time to allow non-stop screens to be aborted by user input
+                                    UserConnection.WriteBytes(ServerConnection.ReadBytes());
                                     _DateLastRX = DateTime.Now;
                                     DoSleep = false;
                                 }
