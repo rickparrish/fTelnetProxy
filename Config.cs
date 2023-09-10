@@ -10,7 +10,7 @@ namespace RandM.fTelnetProxy {
         public string ListenPorts { get; set; }
         public LogLevel LogLevel { get; set; }
         public double MaxIdleTimeInMinutes { get; set; }
-        public double MaxSessionLengthInHours;
+        public double MaxSessionLengthInHours { get; set; }
         public string RelayFilename { get; set; }
         public string RelayDeniedFilename { get; set; }
         public int RLoginPort { get; set; }
@@ -49,8 +49,6 @@ namespace RandM.fTelnetProxy {
         public new void Load() {
             // Try to load, and save a new file if load failed
             if (!base.Load()) base.Save();
-
-            RMLog.Level = LogLevel;
 
             // Output the settings being used
             RMLog.Info("Using settings from " + base.FileName);

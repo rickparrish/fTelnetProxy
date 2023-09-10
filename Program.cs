@@ -12,6 +12,10 @@ namespace RandM.fTelnetProxy {
         /// </summary>
         static void Main(string[] args) {
             try {
+                // Level filtering will happen in the event handler
+                // This is because we want to log everything to disk, and only filter to the console
+                RMLog.Level = LogLevel.Trace;
+
                 // Check for service mode or console mode
                 if (Environment.UserInteractive || OSUtils.IsUnix) {
                     // Console mode, check for arguments
