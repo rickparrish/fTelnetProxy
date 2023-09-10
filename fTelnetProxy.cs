@@ -131,8 +131,8 @@ namespace RandM.fTelnetProxy {
                         case "loglevel":
                             i += 1;
                             try {
-                                RMLog.Level = (LogLevel)Enum.Parse(typeof(LogLevel), Args[i]);
-                                RMLog.Info("-Log level......" + RMLog.Level.ToString());
+                                Config.Default.LogLevel = (LogLevel)Enum.Parse(typeof(LogLevel), Args[i]);
+                                RMLog.Info("-Log level......" + Config.Default.LogLevel.ToString());
                             } catch (Exception ex) {
                                 RMLog.Exception(ex, "-Invalid log level: '" + Args[i] + "'");
                             }
@@ -248,8 +248,8 @@ namespace RandM.fTelnetProxy {
                         case "l":
                         case "loglevel":
                             try {
-                                RMLog.Level = (LogLevel)Enum.Parse(typeof(LogLevel), Value);
-                                RMLog.Info("-Log level......" + RMLog.Level.ToString());
+                                Config.Default.LogLevel = (LogLevel)Enum.Parse(typeof(LogLevel), Value);
+                                RMLog.Info("-Log level......" + Config.Default.LogLevel.ToString());
                             } catch (Exception ex) {
                                 RMLog.Exception(ex, "-Invalid log level: '" + Value + "'");
                             }
