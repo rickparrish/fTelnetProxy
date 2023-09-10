@@ -54,7 +54,7 @@ namespace RandM.fTelnetProxy {
         }
 
         public void DisplayConnectionInformation() {
-            RMLog.Info($"[{_ConnectionId}] {_RemoteIP} -> {_Hostname}:{_Port} (connected: {Math.Round(SecondsSinceConnecting / 60.0, 1)}min, last_rx: {SecondsSinceLastRX}sec, last_tx: {SecondsSinceLastTX}sec)");
+            RMLog.Info($"  {{{_ConnectionId}}} {_RemoteIP} -> {_Hostname}:{_Port} (connected: {Math.Round(SecondsSinceConnecting / 60.0, 1)}min, last_rx: {SecondsSinceLastRX}sec, last_tx: {SecondsSinceLastTX}sec)");
         }
 
         protected override void Execute() {

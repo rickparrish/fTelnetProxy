@@ -63,7 +63,7 @@ namespace RandM.fTelnetProxy {
 
         public void DisplayActiveConnections() {
             foreach (var server in _WebSocketServers) {
-                RMLog.Info($" - Port {server.Port} has {server.ClientConnectionCount} connections:");
+                RMLog.Info($"- Port {server.Port} has {server.ClientConnectionCount} connections:");
                 server.DisplayActiveConnections();
             }
         }

@@ -45,21 +45,39 @@ namespace RandM.fTelnetProxy {
                     using (var fTelnetProxy = new fTelnetProxy()) {
                         fTelnetProxy.Start();
 
-                        Console.WriteLine("Press A for Active Connections or Q to Quit...");
+                        bool doRecycle = false;
+                        string keyMessage = "Press A for Active Connections, R to Recycle, or Q to Quit...";
+                        RMLog.Info(keyMessage);
 
                         while (true) {
                             if (Console.KeyAvailable) {
                                 var Ch = Console.ReadKey(true).Key;
                                 if (Ch == ConsoleKey.A) {
                                     fTelnetProxy.DisplayActiveConnections();
+                                    if (doRecycle) {
+                                        RMLog.Info("- Will recycle when all clients disconnect");
+                                    }
                                 } else if (Ch == ConsoleKey.Q) {
                                     break;
+                                } else if (Ch == ConsoleKey.R) {
+                                    if (fTelnetProxy.ClientConnectionCount == 0) {
+                                        // No connections, so quit
+                                        break;
+                                    } else {
+                                        // Have connections, so toggle recycle flag
+                                        doRecycle = !doRecycle;
+                                        RMLog.Info($"Recycle flag: {(doRecycle ? "set" : "unset")}");
+                                    }
                                 } else {
-                                    Console.WriteLine(fTelnetProxy.ClientConnectionCount.ToString() + " active connections");
-                                    Console.WriteLine("Press A for Active Connections or Q to Quit...");
+                                    RMLog.Info(keyMessage);
                                 }
                             } else {
                                 Thread.Sleep(1000);
+
+                                // Asked to recycle, and no connections, so quit
+                                if (doRecycle && (fTelnetProxy.ClientConnectionCount == 0)) {
+                                    break;
+                                }
                             }
                         }
 
