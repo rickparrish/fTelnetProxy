@@ -339,6 +339,9 @@ namespace RandM.fTelnetProxy {
 
             lock (_LogLock) {
                 FileUtils.FileAppendAllText(_LogFilename, Message);
+                if (!string.IsNullOrWhiteSpace(e.ExceptionDetails)) {
+                    FileUtils.FileAppendAllText(_LogFilename, e.ExceptionDetails + Environment.NewLine);
+                }
 
                 if ((e.Level >= Config.Default.LogLevel) && (Environment.UserInteractive || OSUtils.IsUnix)) {
                     switch (e.Level) {
