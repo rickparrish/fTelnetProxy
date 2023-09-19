@@ -1,9 +1,9 @@
 .vs/*
-bin/Debug/*
-bin/Release/*
-!bin/Release/fTelnetProxy.exe
-!bin/Release/RMLib.dll
-obj/*
+fTelnetProxy/bin/Debug/*
+fTelnetProxy/bin/Release/*
+!fTelnetProxy/bin/Release/fTelnetProxy.exe
+!fTelnetProxy/bin/Release/RMLib.dll
+fTelnetProxy/obj/*
 packages/*
 
 fTelnetProxy.ini

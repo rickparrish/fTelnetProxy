@@ -68,7 +68,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\DLL\RMLib\RMLib.csproj">
+    <ProjectReference Include="..\..\DLL\RMLib\RMLib.csproj">
       <Project>{C57F0D98-F290-42C1-97BD-CD85B47A2FB4}</Project>
       <Name>RMLib</Name>
     </ProjectReference>
