@@ -25,3 +25,7 @@ fTelnetProxy.ini will be created with default values the first time you run fTel
 by passing command-line parameters.  Use fTelnetProxy.exe /? to list the available parameters.
 
 To install or uninstall as a Windows Service, use the /i or /u parameters.
+
+---
+
+NB: To build from source, you will also need RMLib, from https://github.com/rickparrish/RMLib
