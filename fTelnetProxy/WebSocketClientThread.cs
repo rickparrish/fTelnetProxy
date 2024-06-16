@@ -141,6 +141,17 @@ namespace RandM.fTelnetProxy {
                                 } catch (Exception ex) {
                                     RMLog.Exception(ex, "{" + _ConnectionId.ToString() + "} Error reading relay file: '" + Config.Default.RelayFilename + "'");
                                 }
+
+                                // If the requested host:port wasn't in the relay file, also check the Telnet BBS Guide dialdirectory.xml
+                                // This can only happen IF a relay file was specified AND a dialdirectory.xml exists, which should not be the case
+                                // except on the public proxies, so not going to bother creating a setting to toggle this on/off.
+                                if (!CanRelay) {
+                                    try {
+                                        CanRelay = TelnetBbsGuide.IsInDialDirectory(_Hostname, _Port);
+                                    } catch (Exception ex) {
+                                        RMLog.Exception(ex, "{" + _ConnectionId.ToString() + "} Error reading dialdirectory.xml");
+                                    }
+                                }
                             }
                         }
 

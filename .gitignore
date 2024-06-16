@@ -6,9 +6,11 @@ fTelnetProxy/bin/Release/*
 fTelnetProxy/obj/*
 packages/*
 
+dialdirectory.xml
 fTelnetProxy.ini
 rsync-to-proxies.cmd
 rsync-to-proxies-with-wsl.cmd
+telnetbbsguide-downloader.ps1
 *.pfx
 *.suo
 *.user
