@@ -1,7 +1,16 @@
-﻿Sorry, for security reasons this proxy requires your BBS to be added to an
-allowlist before it will forward connections.  
+﻿Sorry, for security reasons this proxy only forwards connections to the
+standard telnet port (23) by default.  To forward to a non-standard port
+you'll need your BBS to be added to an allowlist first.
 
-You can use the contact form at https://www.fTelnet.ca (link is clickable!) 
-to let me know the hostname and port you're trying to connect to:
+The fastest option is to add your BBS to the Telnet BBS Guide, as the
+dialing directory is synchronized with the allowlist every hour.  You can
+add your BBS here: https://www.telnetbbsguide.com (link is clickable!)
+
+If you're still seeing this error message more than an hour after adding
+your BBS to the Telnet BBS Guide, then you can contact me via the contact
+form at https://www.fTelnet.ca and let me know your hostname and port:
 
 {HOSTNAME}:{PORT}
+
+Note that I'm not always quick about responding to email, so I strongly
+suggest going the Telnet BBS Guide route first!
