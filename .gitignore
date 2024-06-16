@@ -8,6 +8,7 @@ packages/*
 
 dialdirectory.xml
 fTelnetProxy.ini
+relay.cfg
 rsync-to-proxies.cmd
 rsync-to-proxies-with-wsl.cmd
 telnetbbsguide-downloader.ps1
