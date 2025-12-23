@@ -3,29 +3,28 @@ fTelnetProxy
 
 A WebSocket to TCP proxy for <a href="https://github.com/rickparrish/fTelnet">fTelnet</a>
 
-Don't want to go through the hassle of setting up your own proxy?
-<a href="http://proxy.ftelnet.ca">I run a few public proxies you can use with fTelnet</a>
+If you want to build from source you'll need to download the RMLib project from here:<br />
+https://github.com/rickparrish/RMLib
 
-If you do want to go ahead with your own local install, download the contents of bin/Release:<br />
-https://github.com/rickparrish/fTelnetProxy/blob/master/bin/Release/fTelnetProxy.exe?raw=true<br />
-https://github.com/rickparrish/fTelnetProxy/blob/master/bin/Release/RMLib.dll?raw=true
+If you don't want to build from source but do want to run your own local instance, then you can download the two
+required binaries from here:<br />
+https://github.com/rickparrish/fTelnetProxy/raw/refs/heads/master/fTelnetProxy/bin/Release/fTelnetProxy.exe<br />
+https://github.com/rickparrish/fTelnetProxy/raw/refs/heads/master/fTelnetProxy/bin/Release/RMLib.dll
 
-On Windows, just make sure you have the .NET Framework 3.5 installed, and you should be good to go.
-
-On Linux, I've tested (and run all my public proxies) with Ubuntu Server 14.04.  Unfortunately it
-currently includes Mono 3.2.8 in the repositories, and there is a bug that prevents wss:// connections
-from working with clients that support TLS 1.1 or 1.2 (so all modern clients) that wasn't fixed until 3.4.0, so:
-
-  - If you need wss:// support, and 3.4.0 isn't available in the repositories yet, then 
-<a href="http://www.mono-project.com/docs/compiling-mono/linux/#building-mono-from-a-release-package">Build Mono from a Release Package</a>.
-
-  - If you don't care about wss:// support, then you can just apt-get install mono-runtime libmono-system-runtime2.0-cil
-  
-fTelnetProxy.ini will be created with default values the first time you run fTelnetProxy.exe.  You may override settings from the .ini
-by passing command-line parameters.  Use fTelnetProxy.exe /? to list the available parameters.
-
-To install or uninstall as a Windows Service, use the /i or /u parameters.
+And if you want the easiest solution, then I run a few public proxies that you can use with fTelnet here:<br />
+http://proxy.ftelnet.ca<br />
+As well as an embed wizard that will simplify fTelnet and proxy configuration here:<br />
+http://embed-v2.ftelnet.ca
 
 ---
 
-NB: To build from source, you will also need RMLib, from https://github.com/rickparrish/RMLib
+If you're running your own instance...
+
+- On Windows, just make sure you have the .NET Framework 4.6.2 installed
+
+- On Linux, I just install `mono-complete` on my Ubuntu 24.04 64-bit VPSes (mono-complete is probably overkill, but it works)
+  
+- fTelnetProxy.ini will be created with default values the first time you run fTelnetProxy.exe.  You may override settings from the .ini
+by passing command-line parameters.  Use fTelnetProxy.exe /? to list the available parameters.
+
+- To install or uninstall as a Windows Service, use the /i or /u parameters.
